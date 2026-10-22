@@ -14,3 +14,4 @@ tidecloak.json
 .tide-pack/
 app/AGENTS.md
 *.tsbuildinfo
+.claude/
