@@ -11,7 +11,7 @@ export function useMe() {
   const persona = personaFor(sub);
   const ctx: Ctx = useMemo(
     () => ({
-      secureFetch: (u: string, i?: RequestInit) => tc.secureFetch(u, i),
+      secureFetch: (u: string, i?: RequestInit) => tc.secureFetch(new URL(u, window.location.origin).toString(), i),
       approveTideRequests: (r: any) => tc.approveTideRequests(r),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
