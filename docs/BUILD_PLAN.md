@@ -69,7 +69,7 @@ challenge2/
 - [x] Wait until `curl -sf http://localhost:8080` succeeds.
 
 ### Phase 2 – Realm bootstrap (target 13:35)
-- [ ] Read `bootstrap-realm-from-template` + canon `tidecloak-bootstrap`. Write `infra/bootstrap-realm.sh`:
+- [x] Read `bootstrap-realm-from-template` + canon `tidecloak-bootstrap`. Write `infra/bootstrap-realm.sh`:
   - realm **`khien-nha`** (never `myrealm`), `registrationAllowed: false` (invite-only)
   - public client **`khien-nha-app`** (redirects `http://localhost:3000/*`, web origins `http://localhost:3000`, DPoP as template)
   - client **`mock-bank`** (bearer-only / no login) holding the transfer roles
@@ -193,3 +193,4 @@ rejects a ≥ 10M transfer without the approval role.
 ## 7. Builder's log (append findings here)
 - 12:25 Docker Desktop was stopped; started it from D:\Docker\DockerDesktop. No `jq` on this machine, so infra scripts after Phase 1 are Node (.mjs) instead of bash+jq. Pack templates fetched to `.tide-pack/` (gitignored) via https://mcp.tide.org/pack/templates.tgz; realm template at `.tide-pack/templates/shared/realm.json.template`.
 - Phase 1 done: `infra/start-tidecloak.sh` runs the container without sudo, using `MSYS_NO_PATHCONV=1` and a `pwd -W` host path for the volume; TideCloak answered 302 on :8080 within ~30 s.
+- Phase 2 done (12:27): `infra/bootstrap-realm.mjs` (Node, uses `infra/lib.mjs`) -> realm `khien-nha`, app client `khien-nha-app` (DPoP on), bearer-only client `mock-bank` with role `chuyen-khoan-lon`, audience mapper for mock-bank, licensed, IGA on, 0 pending CRs. Licence returned `CREATED`.
