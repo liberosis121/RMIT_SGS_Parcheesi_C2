@@ -20,8 +20,8 @@ export function NavBar(props: {
     <nav className="nav">
       <div className="container">
         <Link href={base || "/"} className="brand" aria-label="KinKey home">
-          <Image src="/logo.svg" alt="" width={32} height={32} priority />
-          <span><span className="kin">Kin</span><span className="key">Key</span></span>
+          <Image src="/logo.svg" alt="" width={30} height={30} priority />
+          <span className="word">KinKey</span>
         </Link>
         {user && (
           <div className="nav-links">
@@ -38,7 +38,7 @@ export function NavBar(props: {
                 <span className="avatar">{user.name.charAt(0).toUpperCase()}</span>
                 <span>
                   <div className="name">{user.name}</div>
-                  <div className="role">{user.role === "owner" ? "Account owner" : user.role === "approver" ? "Family approver" : "Unknown account"}</div>
+                  <div className="role">{user.role === "owner" ? "Account owner" : user.role === "approver" ? "Second key holder" : "Unknown account"}</div>
                 </span>
               </div>
               <button className="btn btn-ghost" onClick={props.onSignOut}>Sign out</button>

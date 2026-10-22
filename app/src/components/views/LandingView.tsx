@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
 import type { NavUser } from "../ui/NavBar";
-import { IconShield, IconUser, IconKey, IconLock, IconAlert } from "../ui/Icons";
-import { Pill } from "../ui/Pill";
+import { IconShield } from "../ui/Icons";
 import { money } from "@/lib/format";
 
 export function LandingView(props: {
@@ -19,11 +18,13 @@ export function LandingView(props: {
       <main className="container">
         <section className="hero">
           <div>
-            <h1>
+            <p className="eyebrow">For families with parents who bank on their phone</p>
+            <h1 style={{ marginTop: 14 }}>
               Two keys for <em>every big transfer.</em>
             </h1>
             <p className="lead">
-              Parents stay in control of everyday money. Big transfers wait for a second key from someone they trust.
+              Mom keeps paying for groceries and bills on her own. Anything big waits until a son or daughter she chose turns
+              the second key.
             </p>
             {user ? (
               <div className="row">
@@ -47,69 +48,83 @@ export function LandingView(props: {
               </p>
             )}
             <p className="trust">
-              <IconShield /> <span>Approvals are signed by the Tide network. Our own servers can&apos;t fake them.</span>
+              <IconShield /> <span>Approvals are signed by the Tide network, so not even our own servers can fake one.</span>
             </p>
           </div>
-          <div className="card" aria-label="Example pending transfer">
-            <div className="row between">
-              <span className="muted small">Transfer request</span>
-              <Pill kind="waiting" />
+
+          <div className="slip" aria-label="Example transfer on hold">
+            <div className="slip-head">
+              <span className="eyebrow">Transfer on hold · #0419</span>
             </div>
-            <div className="amount-big" style={{ marginTop: 8 }}>
-              {money(200000000)}
-            </div>
-            <div className="muted">
-              to <strong style={{ color: "var(--text)" }}>Captain Hung</strong> · &quot;police holding account&quot;
-            </div>
-            <div className="warn-banner">
-              <IconAlert /> <span>First transfer to this account. Call Mom before approving.</span>
-            </div>
-            <div className="row between">
-              <div className="dots">
-                <span className="adot on" />
-                <span className="adot" />
-                <span className="small muted" style={{ marginLeft: 6 }}>
-                  1 of 2 approvals
-                </span>
+            <span className="stamp">
+              Waiting for
+              <br />
+              second key
+            </span>
+            <dl>
+              <dt>Amount</dt>
+              <dd className="slip-amount">{money(200000000)}</dd>
+              <dt>To</dt>
+              <dd>
+                Captain Hung
+                <div className="muted small">&ldquo;Police holding account&rdquo;</div>
+              </dd>
+              <dt>Account</dt>
+              <dd className="mono">9704 9998 8877 7</dd>
+            </dl>
+            <div className="keys">
+              <div className="key-row">
+                <span>Key 1 · Mom (Lan)</span>
+                <span className="ok">Turned</span>
               </div>
-              <span className="small muted">Thao approved</span>
+              <div className="key-row">
+                <span>Key 2 · Thao or Minh</span>
+                <span className="wait">Not yet</span>
+              </div>
             </div>
           </div>
         </section>
 
-        <h2 className="section-title">How it works</h2>
-        <section className="steps">
-          <div className="card">
-            <div className="step-num">
-              <IconUser />
-            </div>
-            <h3>Everyday spending stays simple</h3>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Anything under {money(10000000)} goes straight through. No waiting, no extra steps.
-            </p>
+        <section className="band">
+          <div className="band-head">
+            <h2>How it works</h2>
+            <span className="muted small">Threshold: {money(10000000)}</span>
           </div>
-          <div className="card">
-            <div className="step-num">
-              <IconKey />
+          <div className="steps">
+            <div className="step">
+              <div className="step-num">01</div>
+              <h3>Small payments just go</h3>
+              <p>Groceries, bills, a gift for a grandchild. Anything under {money(10000000)} is sent at once.</p>
             </div>
-            <h3>Big transfers need a second key</h3>
-            <p className="muted" style={{ marginTop: 6 }}>
-              A transfer of {money(10000000)} or more is held until a child you chose approves it.
-            </p>
+            <div className="step">
+              <div className="step-num">02</div>
+              <h3>Big ones wait for family</h3>
+              <p>A larger transfer is held until one of the children she picked looks at it and approves.</p>
+            </div>
+            <div className="step">
+              <div className="step-num">03</div>
+              <h3>Nobody can skip the line</h3>
+              <p>Not a scammer on the phone, not a stolen phone, not a developer with access to our servers.</p>
+            </div>
           </div>
-          <div className="card">
-            <div className="step-num">
-              <IconLock />
+        </section>
+
+        <section className="band">
+          <div className="fact">
+            <div className="big">₫18,900 bn</div>
+            <div>
+              <p>
+                lost by people in Vietnam to online scams in 2024. Most scams don&apos;t break a password. They talk the real
+                owner into pressing &ldquo;send&rdquo;.
+              </p>
+              <p className="src">Source: National Cybersecurity Association (NCA), 2024 survey</p>
             </div>
-            <h3>No one can skip the rule</h3>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Not a scammer on the phone, not a stolen phone, not even our own server.
-            </p>
           </div>
         </section>
       </main>
       <footer className="footer container">
-        Prototype with synthetic data · Secured by TideCloak · RMIT Hackathon 2026, Team Parcheesi
+        <span>KinKey · prototype with synthetic data · secured by TideCloak</span>
+        <span>RMIT Hackathon 2026 · Team Parcheesi</span>
       </footer>
     </>
   );
