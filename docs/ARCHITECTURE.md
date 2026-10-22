@@ -1,176 +1,185 @@
-# Khiên Nhà – Tài liệu kỹ thuật (cho thành viên nhóm)
+# KinKey – Hiểu toàn bộ dự án trong 10 phút (tiếng Việt)
 
-> Cập nhật: 22/10/2026, khoảng 13:50. Trạng thái: **code xong khoảng 80%, chưa test được luồng có đăng nhập**, vì đang kẹt bước tạo tài khoản Tide (lỗi mạng Tide/4G, xem mục 7).
-
----
-
-## 1. App làm gì (1 phút)
-
-**Khiên Nhà = "ví hai chìa" cho gia đình.**
-- **Bà Lan** (mẹ) chuyển **dưới 10 triệu**: đi ngay.
-- Chuyển **từ 10 triệu trở lên**: giao dịch **bị giữ lại**, phải có **Bà Lan + ít nhất 1 người con (Thảo hoặc Minh)** duyệt.
-- **Điểm ăn tiền:** quyền duyệt do **TideCloak + mạng Tide** giữ, không phải server của mình. Nhóm mình có root server, sửa database thành "đã duyệt" cũng **không qua được ngân hàng**.
+> Cập nhật 22/10/2026, 17:00. File này thay cho bản cũ. Tên cũ của dự án là "Khiên Nhà", giờ là **KinKey**.
 
 ---
 
-## 2. Kiến trúc: 3 phần chạy trên laptop
+## 1. Challenge 2 yêu cầu gì?
+
+- Đề: **Tide UNLOCKED**. Câu hỏi: *"Bạn sẽ xây gì nếu niềm tin không còn là nút thắt?"*
+- Làm một **app nhỏ chạy được, có TideCloak**, cho thấy **một điều trước đây không làm được** vì phải tin một người/một bên nắm toàn quyền.
+- Khái niệm chính: **Emergent Authority**. Không admin, server hay công ty nào **một mình** vượt được luật. Quyền chỉ "xuất hiện" khi **đủ người duyệt + đúng chính sách**.
+- Câu "sống còn" của đề: *nếu thay TideCloak bằng đăng nhập + phân quyền bình thường mà app vẫn y hệt, thì ý tưởng còn yếu.*
+- **Nộp:** repo GitHub public (code + README, phần tổng quan ≤ 300 chữ, 5 mục) + **video 2 phút** `demo.mp4` + link qua Google Form. Hạn **18:00 hôm nay**.
+- **Cập nhật của BTC trong ngày:** mạng Tide bị quá tải nên BTC cho phép *"làm như thể TideCloak đang bảo vệ app, dùng Tide MCP để lập kế hoạch TideCloak nằm ở đâu, và **mô phỏng** đăng nhập, role, kiểm quyền"*.
+
+---
+
+## 2. Tình huống (vấn đề)
+
+- Lừa đảo qua điện thoại ở Việt Nam: khoảng **18.900 tỷ đồng (~744 triệu USD) năm 2024**. Người già bị nhắm nhiều nhất.
+- Kẻ lừa (giả công an, "Đại úy Hùng") **không hack mật khẩu**, mà **thuyết phục chính chủ bấm chuyển tiền**.
+- Ngân hàng bắt **sinh trắc học** khi chuyển trên 10 triệu, nhưng chỉ chứng minh *"đúng là mẹ"*. Trong vụ lừa, **chính mẹ là người bấm**.
+- Cách bảo vệ hiện nay đều phải **trao quyền cho ai đó**, và người đó thành điểm yếu mới:
+
+| Cách hiện nay | Hỏng ở đâu |
+|---|---|
+| Con giữ luôn tài khoản của mẹ | Con có toàn quyền rút tiền, mẹ mất tự chủ |
+| App/ngân hàng làm tính năng "người thân duyệt" | Luật đó chỉ là **1 dòng trong database**. Admin, nhân viên, hacker chiếm server đều tắt hoặc giả được |
+
+> Ý chính: **lừa đảo qua điện thoại = "prompt injection" nhắm vào con người** (câu này nối với Challenge 1 của Sỹ).
+
+---
+
+## 3. Giải pháp: KinKey, "ví hai chìa" cho gia đình
+
+| Luật | Vì sao |
+|---|---|
+| **Dưới 10 triệu**: mẹ tự chuyển, đi ngay | Giữ tự chủ cho người già, không biến app thành công cụ kiểm soát |
+| **Từ 10 triệu trở lên**: **giữ lại**, cần **mẹ + ít nhất 1 người con** duyệt (2 trên 3) | Chìa thứ hai nằm ở **máy người khác**, kẻ lừa không với tới |
+| Con **không tự tạo** giao dịch từ tài khoản của mẹ | Con chỉ giữ chìa, không giữ tiền |
+| **Đổi luật** (bỏ người duyệt, hạ ngưỡng) cũng cần 2/3 | Không ai âm thầm tắt bảo vệ |
+| Quyền chuyển lớn **chỉ dùng 1 lần**, mọi thao tác **có lịch sử** | Không dùng lại được, cả nhà nhìn thấy |
+
+**Nhân vật (dữ liệu giả):**
+- **Mom (Lan)**, 68 tuổi, chủ tài khoản, có **₫850.000.000**
+- **Thao** (con gái) và **Minh** (con trai): người giữ chìa thứ hai
+- Người nhận: **Bin** (học phí cháu, 30 triệu), **Chợ Bến Thành** (tiền chợ, 2 triệu), **Captain Hung – "police holding account"** (kẻ lừa, 200 triệu)
+
+---
+
+## 4. Vì sao bắt buộc phải là TideCloak (qua bài test của đề)
+
+| Tình huống | App đăng nhập thường | KinKey + TideCloak |
+|---|---|---|
+| Kẻ lừa thuyết phục mẹ chuyển 200 triệu | Chặn được **nếu** luật trên server còn nguyên | Chặn: quyền chuyển lớn chỉ có khi con duyệt thật |
+| Dev/hacker có toàn quyền server sửa DB thành "đã duyệt" | **Làm được** | Ngân hàng từ chối: không có chữ ký hợp lệ của Tide |
+| Lấy khoá ký token của hệ thống | **Làm được** (khoá nằm trong DB) | **Không có khoá để lấy**: token do mạng Tide ký phân tán, khoá không bao giờ ghép lại một chỗ |
+| Một người con tự gỡ người duyệt khác | **Làm được** nếu là admin | Thành yêu cầu chờ 2/3 duyệt |
+
+**3 tính năng TideCloak dùng:**
+1. **Đăng nhập Tide (BYOiD):** mỗi người một danh tính Tide, app không bao giờ thấy mật khẩu.
+2. **IGA / Quorum:** mọi thay đổi quyền thành **"change request"**, phải đủ người duyệt (mỗi người ký trong **cửa sổ Tide** trên máy mình) mới có hiệu lực.
+3. **Token do mạng Tide ký:** ngân hàng chỉ cần **khoá công khai** để kiểm, không ai giữ khoá bí mật.
+
+---
+
+## 5. Kiến trúc
 
 ```
-          Trình duyệt (3 cửa sổ riêng: Bà Lan / Thảo / Minh)
-           │                    │                         │
-           │ (1) đăng nhập      │ (2) xem trang           │ (3) chuyển tiền
-           │     + DUYỆT        │                         │     kèm token
-           ▼                    ▼                         ▼
- ┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐
- │ TideCloak  :8080   │  │ Khiên Nhà app :3000│  │ MockBank     :4000 │
- │ (Docker)           │  │ Next.js (frontend  │  │ Express (backend   │
- │ realm khien-nha    │  │ + API nhỏ lưu giao │  │ "ngân hàng giả")   │
- │ bật IGA (quorum)   │  │ dịch chờ)          │  │ kiểm token Tide    │
- └─────────┬──────────┘  └────────────────────┘  └────────────────────┘
-           │ ký token phân tán
-           ▼
-   Mạng Tide (20 máy ORK trên internet), không ai giữ trọn khoá
+   Trình duyệt Mom / Thao / Minh (mỗi người một cửa sổ)
+        │ đăng nhập + DUYỆT         │ xem giao diện          │ chuyển tiền + token
+        ▼                           ▼                        ▼
+  TideCloak :8080            App KinKey :3000           MockBank :4000
+  (giữ luật duyệt 2/3,       (Next.js, giao diện +      (ngân hàng giả: chỉ chuyển
+   cấp token do mạng          lưu giao dịch chờ.          khi token Tide hợp lệ
+   Tide ký)                   KHÔNG được tin)             và có quyền)
 ```
 
-| Thành phần | Cổng | Công nghệ | Vai trò | Có được tin không? |
-|---|---|---|---|---|
-| **TideCloak** | `http://localhost:8080` | Docker image `tideorg/tidecloak-dev` | Đăng nhập, giữ **luật duyệt nhiều người** (IGA/quorum), cấp token do mạng Tide ký | Tin **mạng Tide**, không tin riêng 1 máy |
-| **App Khiên Nhà** | `http://localhost:3000` | Next.js 16 + React, TypeScript, SDK `@tidecloak/nextjs` | Giao diện Ví + Duyệt; lưu danh sách giao dịch chờ | **Không tin** (cố ý: server app có thể bị hack) |
-| **MockBank** | `http://localhost:4000` | Node + Express, TypeScript, `jose` | Thực hiện chuyển tiền **chỉ khi token Tide hợp lệ và có quyền** | Đóng vai **ngân hàng thật** (bên kiểm độc lập) |
+| Phần | Công nghệ | Có được tin không? |
+|---|---|---|
+| **TideCloak** | Docker `tideorg/tidecloak-dev`, realm `kinkey2` | Tin **mạng Tide**, không tin riêng máy nào |
+| **App KinKey** | Next.js + React + TypeScript | **Không**: coi như có thể bị hack, nhưng không tự cấp quyền được |
+| **MockBank** | Node + Express | Đóng vai **ngân hàng thật**, chỉ tin chữ ký Tide |
 
-**Quy tắc bảo mật quan trọng nhất:** nút **Duyệt** gọi **thẳng từ trình duyệt lên TideCloak** bằng token của chính người duyệt, **không đi qua server app**. Đi qua server thì mọi lượt duyệt bị tính cho một tài khoản server, vừa sai vừa phá ý tưởng.
-
----
-
-## 3. Luồng hoạt động
-
-### 3.1. Chuyển < 10 triệu (ví dụ 2 triệu tiền chợ)
-1. Bà Lan đăng nhập, vào **Ví**, chọn người nhận, nhập số tiền.
-2. Trình duyệt gửi `POST /transfer` lên **MockBank** kèm token Tide của Bà Lan.
-3. MockBank kiểm chữ ký token (bằng khoá công khai của Tide), thấy đúng là chủ tài khoản → **chuyển**.
-
-### 3.2. Chuyển ≥ 10 triệu (ví dụ 200 triệu cho "Đại úy Hùng")
-1. Bà Lan bấm chuyển → app lưu giao dịch trạng thái **"Chờ người thân duyệt"**.
-2. Trình duyệt Bà Lan gửi lên TideCloak **yêu cầu cấp quyền** `chuyen-khoan-lon` cho chính bà. Đây gọi là **change request (CR)**, sẽ nằm chờ.
-3. Thảo / Minh vào trang **Duyệt**: thấy giao dịch + cảnh báo người nhận lạ → bấm **Duyệt** (ký trong cửa sổ Tide) hoặc **Từ chối**.
-4. Đủ **2/3 người** (Bà Lan + 1 con) → TideCloak áp dụng thay đổi, quyền xuất hiện trong token của Bà Lan. **Có thể trễ tới 120 giây**, app có đếm ngược và nút làm mới.
-5. Bà Lan bấm **"Thực hiện"** → MockBank thấy token có quyền → **chuyển**. Mỗi lượt cấp quyền **chỉ dùng được 1 lần**, sau đó bấm **"Khoá lại quyền"**.
-
-### 3.3. Cảnh tấn công: dev gian lận (demo cảnh 4)
-- Dev sửa file dữ liệu của app thành "đã duyệt", rồi gửi token **tự ký bằng khoá riêng** → MockBank trả **401 `INVALID_SIGNATURE`**, vì nó chỉ tin khoá của Tide.
-- Gửi token thật của Bà Lan nhưng **chưa được duyệt** → **403 `NEEDS_FAMILY_APPROVAL`**.
-- ✅ **Phần này đã chạy thử thành công** (`node scripts/attack-forge.mjs`).
+**Quy tắc bảo mật quan trọng nhất:** nút **Duyệt** gửi **thẳng từ trình duyệt người duyệt lên TideCloak**, không đi qua server app. Đi qua server thì server có thể "bỏ phiếu thay", đúng lỗ hổng app sinh ra để chặn.
 
 ---
 
-## 4. Cấu trúc thư mục
+## 6. Một giao dịch chạy thế nào
+
+**Chuyển nhỏ (2 triệu):** Mom bấm *Send now* → ngân hàng kiểm token → chuyển ngay.
+
+**Chuyển lớn (200 triệu cho "Captain Hung"):**
+1. Mom bấm *Request approval* → giao dịch **"Waiting for family approval"**, tạo yêu cầu cấp quyền chuyển lớn.
+2. Mom vào *Approvals* → *Approve* → ký → **1 of 2** (chìa 1).
+3. Thao vào *Approvals* → thấy **cảnh báo đỏ "First transfer to this account. Call Mom before approving."**
+   - **Deny** → giao dịch bị huỷ, tiền không đi.
+   - Hoặc **Approve** → ký → **2 of 2** → quyền được cấp.
+4. Mom bấm *Complete transfer* → ngân hàng thấy token có quyền → chuyển. Quyền **tự hết sau 1 lần dùng**.
+
+**Tấn công thử (dev gian lận):**
+- *Forge a token* (token tự ký bằng khoá khác) → ngân hàng trả **401 INVALID_SIGNATURE**
+- *Forge approval and try to send* (sửa DB thành "đã duyệt", token thật nhưng chưa có quyền) → **403 NEEDS_FAMILY_APPROVAL**
+
+---
+
+## 7. Cái gì thật, cái gì mô phỏng
+
+| Phần | Trạng thái |
+|---|---|
+| TideCloak, realm, licence, IGA | **Thật**, chạy trên laptop Yến |
+| Mom đăng nhập bằng tài khoản Tide | **Thật**, đã chạy |
+| Ngân hàng kiểm chữ ký Tide và chuyển **2 triệu** | **Thật**, đã chạy |
+| Tài khoản Tide của Thao, Minh | **Không tạo được**: mạng Tide lỗi liên tục (kết nối ORK, chữ ký, giới hạn gói, lỗi 500 khi cấp licence) |
+| Duyệt 2/3 với 3 người | **Mô phỏng** ở `/sim`, theo đúng hướng dẫn của BTC |
+
+**Chế độ mô phỏng `/sim`** giả lập đúng các phần TideCloak làm:
+- Trang đăng nhập kiểu Tide → cấp **token có role** (`owner` cho Mom, `approver` cho Thao/Minh), ký bằng **"khoá Fabric giả lập"**.
+- **Chặn trang theo role:** Thao mở Ví → *"Access denied · requires role owner"*.
+- **Duyệt 2/3**, mỗi người 1 phiếu (duyệt lần 2 bị từ chối), hộp ký giống cửa sổ Tide (*Confirm and sign*).
+- **Ngân hàng mô phỏng** chỉ dùng **khoá công khai** để kiểm, cùng luật với MockBank thật.
+- Khung **"Your token (decoded)"** cho giám khảo thấy role nằm trong token.
+
+Kế hoạch tích hợp TideCloak (lập bằng Tide MCP) ở [TIDECLOAK_PLAN.md](TIDECLOAK_PLAN.md).
+
+---
+
+## 8. Các trang web
+
+| Trang | Dùng để | Đăng nhập |
+|---|---|---|
+| http://localhost:3000/sim | **Dùng cho video**: trang chủ chế độ mô phỏng | – |
+| http://localhost:3000/sim/signin | Đăng nhập mô phỏng | `mom` / `thao` / `minh`, mật khẩu `demo` |
+| http://localhost:3000/sim/wallet | **Ví** của Mom: số dư, chuyển tiền, lịch sử, tấn công thử, xem token | Mom |
+| http://localhost:3000/sim/approvals | **Duyệt**: yêu cầu chờ, Approve / Deny | Mom, Thao, Minh |
+| http://localhost:3000 , `/wallet` | App **thật** với TideCloak thật (chỉ Mom có tài khoản) | Tài khoản Tide thật |
+| http://localhost:3000/preview | Bản xem giao diện, dữ liệu giả, không đăng nhập | – |
+| http://localhost:4000/ledger | Sổ cái ngân hàng giả (JSON) | – |
+
+**Mỗi tab trình duyệt là một người riêng.** Mom một tab, Thao một tab, đăng nhập riêng.
+
+---
+
+## 9. Cách chạy và test
+
+Đang chạy sẵn trên laptop Yến (đừng tắt app Claude và Docker Desktop). Nếu phải chạy lại:
+
+```bash
+docker start tidecloak                          # TideCloak (chỉ cần cho trang thật)
+cd app  && npm run dev                          # App :3000
+cd bank && npm run dev                          # MockBank :4000 (chỉ cần cho trang thật)
+```
+
+**Test trước khi quay:**
+1. Reset dữ liệu mô phỏng: `curl -X POST localhost:3000/api/sim/reset`
+2. Tab Chrome: `/sim/signin` → đăng nhập `mom` / `demo`
+3. Tab Edge: `/sim/signin` → đăng nhập `thao` / `demo`
+4. Làm theo bảng **D1–D7** trong [VIDEO_PLAN.md](VIDEO_PLAN.md) (mục "BẢN CHỐT")
+5. Xong thì **reset + đăng nhập lại** rồi mới quay thật
+
+---
+
+## 10. Giới hạn (nói thật, đã ghi trong README)
+
+- Ai chiếm được **cả máy mẹ lẫn máy con** thì vẫn đủ 2 chìa. Tide chứng minh "người giữ phiên này có quyền", không chứng minh người đó tỉnh táo.
+- Lượt duyệt gắn với **"quyền chuyển lớn dùng 1 lần"**, chưa gắn với **đúng số tiền + đúng người nhận**. Muốn vậy cần hợp đồng Forseti của Tide (chưa mở cho tự triển khai).
+- **MockBank là của nhóm**, đóng vai ngân hàng thật.
+- 2 người con cùng nhau có thể đổi luật mà không cần mẹ (nhưng không chuyển được tiền của mẹ).
+- Mọi dữ liệu là giả.
+
+---
+
+## 11. Thư mục chính
 
 ```
 challenge2/
-├── README.md                 # Bài nộp: mô tả + 5 mục giám khảo chấm (≤300 chữ) + Setup + Limitations
-├── .env                      # KHÔNG có trên git: email licence, mật khẩu admin TideCloak (chỉ trên laptop Yến)
-├── .mcp.json                 # Kết nối Tide MCP cho Claude Code
-├── tools/tide-mcp.sh         # Gọi tài liệu Tide MCP bằng curl
-├── infra/                    # Script dựng TideCloak (chạy 1 lần)
-│   ├── start-tidecloak.sh    #   chạy Docker TideCloak :8080
-│   ├── bootstrap-realm.mjs   #   tạo realm khien-nha, client, role, bật IGA, đăng ký licence
-│   ├── create-users.mjs      #   tạo user ba-lan / thao / minh + link mời (lưu ở data/, không lên git)
-│   ├── finish-users.mjs      #   SAU khi tạo tài khoản Tide: cấp quyền tide-realm-admin
-│   ├── export-adapter.mjs    #   xuất file cấu hình Tide (khoá công khai) cho app + bank
-│   └── lib.mjs               #   hàm dùng chung
-├── app/                      # FRONTEND + API nhỏ (Next.js) :3000
-│   ├── seed/seed.json        #   dữ liệu giả: Bà Lan 850 triệu, 3 người nhận, lịch sử
-│   ├── public/               #   file bắt buộc của Tide (silent-check-sso, tide_dpop_auth)
-│   └── src/
-│       ├── app/page.tsx              # Trang chủ + nút đăng nhập
-│       ├── app/wallet/page.tsx       # Trang Ví (Bà Lan)
-│       ├── app/approvals/page.tsx    # Trang Duyệt (Thảo, Minh, Bà Lan)
-│       ├── app/auth/redirect/        # Trang quay về sau đăng nhập
-│       ├── app/api/tx/route.ts       # API lưu / sửa giao dịch chờ (file app/data/tx-store.json)
-│       ├── app/api/config/route.ts   # API trả cấu hình công khai
-│       ├── components/               # Khung trang, form nhập tên hiển thị
-│       └── lib/
-│           ├── iga.ts        # Gọi TideCloak từ trình duyệt: tạo/liệt kê/duyệt/từ chối change request
-│           ├── txStore.ts    # Lưu giao dịch (JSON, server app, không được tin)
-│           ├── config.ts     # Cổng, tên realm, role chuyen-khoan-lon, ánh xạ người dùng
-│           └── auth/         # Kiểm token phía server (DPoP)
-├── bank/                     # BACKEND "ngân hàng giả" (Express) :4000
-│   └── src/server.ts         #   GET /ledger, POST /transfer, (POST /reset nếu ALLOW_RESET=1)
-├── scripts/attack-forge.mjs  # Demo: dev giả mạo duyệt → bị từ chối
-└── docs/                     # Kế hoạch, proposal, tài liệu này
+├── README.md              bài nộp (tiếng Anh): tổng quan 5 mục + chi tiết
+├── demo.mp4               video (sắp có)
+├── app/                   App KinKey (Next.js)
+│   └── src/app/sim/       chế độ Simulated TideCloak
+├── bank/                  MockBank (ngân hàng giả)
+├── infra/                 script dựng TideCloak, realm, user
+├── scripts/attack-forge.mjs   tấn công thử bằng dòng lệnh
+└── docs/                  tài liệu nhóm (file này, kế hoạch, kịch bản video)
 ```
-
-**File không có trên GitHub (gitignore):** `.env`, `data/` (dữ liệu TideCloak, link mời, danh sách user), `app/data/`, `bank/data/` (file cấu hình Tide `tidecloak.json`), `node_modules/`.
-
----
-
-## 5. API của MockBank
-
-| Method | Đường dẫn | Mô tả | Kết quả |
-|---|---|---|---|
-| `GET` | `/ledger` | Số dư + lịch sử chuyển | 200 |
-| `POST` | `/transfer` | Body `{txId, from, to, amount, nonce}`, header `Authorization` + `DPoP` | 200 thành công |
-| | | Token giả / sai chữ ký | **401** `INVALID_SIGNATURE` |
-| | | ≥ 10 triệu chưa được duyệt | **403** `NEEDS_FAMILY_APPROVAL` |
-| | | Lượt duyệt đã dùng rồi | **403** `APPROVAL_ALREADY_USED` |
-| | | `txId` đã chuyển rồi | **409** `TX_ALREADY_USED` |
-| | | Không đủ tiền | **422** `INSUFFICIENT_FUNDS` |
-| `POST` | `/reset` | Reset sổ cái giữa các lần quay video (chỉ khi chạy với `ALLOW_RESET=1`) | 200 |
-
----
-
-## 6. Cách chạy (trên laptop của Yến)
-
-Cần có: **Docker Desktop đang mở**, Node 24, **internet** (mạng Tide).
-
-```bash
-# 0. Lần đầu (ĐÃ LÀM, không chạy lại trừ khi muốn làm lại từ đầu)
-bash infra/start-tidecloak.sh        # chạy TideCloak :8080
-node infra/bootstrap-realm.mjs       # tạo realm khien-nha
-node infra/create-users.mjs          # tạo 3 user + link mời
-# → mở 3 link mời, tạo 3 tài khoản Tide (người thật làm)  ← ĐANG KẸT Ở ĐÂY
-node infra/finish-users.mjs          # cấp quyền (có thể cần Bà Lan bấm duyệt)
-node infra/export-adapter.mjs        # xuất cấu hình Tide cho app + bank
-
-# 1. Mỗi lần chạy demo (2 cửa sổ terminal)
-cd bank && npm install && ALLOW_RESET=1 npm run dev     # MockBank :4000
-cd app  && npm install && npm run dev                   # App :3000
-
-# 2. Mở app
-#    Bà Lan: Chrome ẩn danh → http://localhost:3000
-#    Thảo:   Edge InPrivate → http://localhost:3000
-#    Minh:   Chrome Guest   → http://localhost:3000
-
-# Demo tấn công (bank phải đang chạy)
-node scripts/attack-forge.mjs
-```
-
-> Nếu TideCloak tắt (khởi động lại máy): mở Docker Desktop, chạy `docker start tidecloak`. **Đừng** chạy `start-tidecloak.sh --wipe`, lệnh này xoá sạch dữ liệu.
-
----
-
-## 7. Tình trạng hiện tại
-
-| Hạng mục | Trạng thái |
-|---|---|
-| TideCloak chạy, realm `khien-nha`, IGA bật, licence OK | ✅ |
-| 3 user + link mời | ✅ |
-| **Tạo 3 tài khoản Tide** | ❌ **Kẹt**: lỗi mạng Tide (*"got 7 of 20 ORKs"*, *"aggregate shard signature didn't pass"*). Tên `parcheesi-balan` bị tạo dở, bỏ, dùng tên mới. Đã nhờ hỏi mentor / Discord #support |
-| Cấp quyền admin cho 3 người (`finish-users.mjs`) | ⏳ Chờ bước trên |
-| App: trang chủ, Ví, Duyệt, form tên | ✅ Code xong, build OK; ❓ chưa test với đăng nhập thật |
-| MockBank | ✅ Code xong, các mã lỗi đã chạy thử |
-| Demo tấn công (cảnh 4) | ✅ Đã chạy thử thành công |
-| README Setup / Limitations | ⏳ Viết sau khi test xong |
-| Video | ⏳ Sau feature freeze |
-
-**Quyết định thiết kế:** dùng **role chung `chuyen-khoan-lon`**, dùng 1 lần mỗi lượt cấp. Phương án "mỗi giao dịch một role riêng" đã thử: cần 2 vòng duyệt/giao dịch, quá dài cho video. → README Limitations sẽ ghi: *lượt duyệt gắn với quyền chung, chưa gắn với từng giao dịch cụ thể*.
-
-**Rủi ro sẽ lộ ra khi test thật:** trình duyệt gọi API TideCloak có bị chặn CORS không; token có đủ quyền liệt kê CR không; định dạng ký duyệt trong enclave; token có claim `aud=mock-bank` không. Agent đã ghi chỗ sửa cho từng trường hợp trong [BUILD_PLAN.md](BUILD_PLAN.md) §7.
-
----
-
-## 8. Ai cần đọc gì
-
-- **Hằng (README, video):** đọc mục 1, 3 và 7. Cảnh demo theo [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) §6.
-- **Sỹ (C1):** đọc mục 1 để biết câu chuyện nối C1–C2: *"Phone scams are prompt injection, aimed at humans."*
-- **Yến (code):** mục 6 để chạy; chi tiết kỹ thuật và nhật ký agent trong [BUILD_PLAN.md](BUILD_PLAN.md).
