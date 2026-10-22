@@ -29,6 +29,8 @@ Mom sends 2 million VND alone. A fake police officer pushes her to send 200 mill
 
 [`demo.mp4`](demo.mp4) _(2 minutes, < 100 MB)_
 
+> **Real vs simulated, in one line.** TideCloak runs for real (realm, licence, IGA, Mom's real Tide sign-in, and MockBank executed a ₫2,000,000 transfer after verifying a real Fabric-signed token). Because the Tide network was overloaded during the event, the organisers asked teams to *"build the app as though TideCloak protects it, use Tide's MCP to plan where TideCloak fits, and simulate TideCloak's sign-in, roles and access checks"*. The full three-person quorum flow therefore runs in **Simulated TideCloak mode** at `/sim`. See [docs/TIDECLOAK_PLAN.md](docs/TIDECLOAK_PLAN.md).
+
 ---
 
 ## Contents
@@ -119,7 +121,7 @@ With ordinary login the screens would look the same, but the promise *"no one ca
             ▼                         ▼                              ▼
   ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────────┐
   │ TideCloak      :8080 │   │ KinKey app     :3000 │   │ MockBank           :4000 │
-  │ realm "khien-nha"    │   │ Next.js 16 / React   │   │ Express + jose           │
+  │ realm "kinkey2"      │   │ Next.js 16 / React   │   │ Express + jose           │
   │ IGA / quorum ON      │   │ UI + small tx store  │   │ verifies Tide signature  │
   │ client roles on      │   │ (UNTRUSTED by design)│   │ with the realm's public  │
   │ "mock-bank"          │   │                      │   │ key, then moves money    │
@@ -135,7 +137,7 @@ With ordinary login the screens would look the same, but the promise *"no one ca
 | **KinKey app** | Next.js 16, React, TypeScript, `@tidecloak/nextjs` | Wallet and approvals UI; stores pending transfers in a JSON file | **No.** Assumed compromisable; it cannot grant itself anything |
 | **MockBank** | Node, Express, TypeScript, `jose` | Executes transfers only for valid tokens with the right role | Plays the **real bank** (independent verifier) |
 
-**Realm design (`khien-nha`):**
+**Realm design (`kinkey2`; scripts default to `khien-nha`, set `REALM` in `.env`):**
 - Public client `khien-nha-app` (DPoP-bound tokens), bearer-only client `mock-bank`.
 - Client role **`chuyen-khoan-lon`** ("large transfer") on `mock-bank`. Nobody holds it by default.
 - Mom, Thao and Minh are the realm's `tide-realm-admin`s → quorum threshold `max(1, floor(0.7 × 3)) = 2`, i.e. **Mom + one child**.
@@ -186,7 +188,7 @@ Mom ── "Lock approval again" ──► revoke change request (needs quorum a
 
 Decisions we made on purpose, checked against Tide's agent pack (Raziel MCP) canon:
 
-1. **Approvals go from the approver's browser straight to TideCloak** (`POST /admin/realms/khien-nha/iga/change-requests/{id}/approve`) with *their own* DPoP-bound token. They never pass through the Next.js server. A proxied approval is credited to the proxy's identity, which would let one server cast several "votes": the exact weakness KinKey exists to remove.
+1. **Approvals go from the approver's browser straight to TideCloak** (`POST /admin/realms/{realm}/iga/change-requests/{id}/approve`) with *their own* DPoP-bound token. They never pass through the Next.js server. A proxied approval is credited to the proxy's identity, which would let one server cast several "votes": the exact weakness KinKey exists to remove.
 2. **MockBank verifies tokens offline** with `createLocalJWKSet(adapter.jwk)`: the realm's Fabric public key is pinned from the adapter file, with no network JWKS fetch. It also checks issuer, `azp`, audience `mock-bank`, and the DPoP proof.
 3. **The app server is untrusted.** It stores pending transfers for display only; it never holds tokens or keys, and nothing it writes can make the bank move money.
 4. **Approval is single-use.** The bank accepts one large transfer per grant and refuses replays (`txId` reuse, re-used grant) until the role is revoked and granted again.
@@ -206,6 +208,7 @@ Decisions we made on purpose, checked against Tide's agent pack (Raziel MCP) can
 | `/` | Everyone | Hero *"Two keys for every big transfer."*, a "transfer on hold" slip, how it works, the scam statistic, **Sign in with Tide** |
 | `/wallet` | Mom | Balance, new-transfer form (recipient cards, quick amounts, live "needs approval" hint), pending transfer with a 3-step tracker (*Requested → Family approval → Sent*), activity log, **Developer attack demo** |
 | `/approvals` | Thao, Minh (and Mom) | Request cards with amount, recipient, red *"First transfer to this account. Call Mom before approving."* warning, approval dots (x of 2), **Approve / Deny**, folded admin changes, history |
+| `/sim`, `/sim/signin`, `/sim/wallet`, `/sim/approvals` | Everyone (demo) | **Simulated TideCloak mode**: a Tide-style sign-in (`mom`, `thao`, `minh`, password `demo`), tokens with roles signed by a simulated Fabric key, role-based route guards (*"Access denied · requires role owner"*), a **"Your token (decoded)"** panel, 2-of-3 quorum approvals signed in a Tide-style enclave dialog, a simulated bank that only trusts the Fabric public key, and both attack buttons (*Forge approval* → 403, *Forge a token* → 401) |
 | `/preview`, `/preview/wallet`, `/preview/approvals` | Reviewers | The **same components with mock data and no login**, clearly bannered *"UI preview · mock data · not connected to Tide"* |
 
 First sign-in asks *"What should we call you?"* (display name only; Tide accounts carry no name or email by default).
@@ -226,7 +229,7 @@ cp .env.example .env
 
 # 2. TideCloak (port 8080) and the realm
 bash infra/start-tidecloak.sh
-node infra/bootstrap-realm.mjs        # realm khien-nha, clients, role, licence, IGA on
+node infra/bootstrap-realm.mjs        # realm (REALM in .env), clients, role, licence, IGA on
 node infra/create-users.mjs           # users ba-lan, thao, minh + one invite link each (saved to data/, git-ignored)
 
 # 3. Open each invite link in a SEPARATE browser (e.g. Chrome Guest, Edge InPrivate, Firefox)
@@ -243,7 +246,7 @@ cd app  && npm install && npm run dev                   # KinKey    → http://l
 node scripts/attack-forge.mjs
 ```
 
-**Without any Tide account** you can still see the full UI at `http://localhost:3000/preview` (run only step 4's app command after `npm install`).
+**Without any Tide account (recommended for judges):** run only the app (`cd app && npm install && npm run dev`) and open **`http://localhost:3000/sim`**. Sign in as `mom` in one browser tab and `thao` in another (password `demo`; each tab is its own person). Reset the demo with `curl -X POST localhost:3000/api/sim/reset`, then sign in again. A static mock-data preview is at `/preview`.
 
 > TideCloak keeps its data in `./data`. After a reboot: start Docker Desktop and run `docker start tidecloak`. `bash infra/start-tidecloak.sh --wipe` deletes everything.
 
@@ -282,12 +285,16 @@ node scripts/attack-forge.mjs
 
 ## 10. Status, limitations and honest scope
 
-**Working and verified**
-- TideCloak realm with IGA, licence, three invite-only users and Tide IdP configured by script.
-- KinKey UI (real and preview pages), *Sign in with Tide* reaches the Tide network login.
-- MockBank verification: forged tokens are rejected with `401 INVALID_SIGNATURE`; unauthenticated calls are refused.
+**Real TideCloak: working and verified**
+- TideCloak dev server, realm with licence, IGA (quorum) and Tide IdP, configured entirely by script.
+- **Mom's real Tide account** linked through an invite link and **signed in to KinKey** with the Tide enclave.
+- **MockBank executed a real ₫2,000,000 transfer** after verifying Mom's Fabric-signed, DPoP-bound token offline.
+- Forged tokens are rejected with `401 INVALID_SIGNATURE`; unauthenticated calls are refused.
 
-**Not verified end to end on the day.** Creating the three Tide accounts from our invite links failed on the Tide network side with *"could not reach enough NEW ORKs (7 of 20)"*, *"aggregate shard signature didn't pass"* and *"signature verification didn't pass"*; our TideCloak logged no error for the last attempt. Because of that, the live approval round-trip (enclave signing → committed role → bank `200`) could not be exercised before the deadline. The code for it is complete and follows the Tide playbooks.
+**Simulated TideCloak (`/sim`): working and verified end to end**
+- Sign-in for all three people, roles in the token, route guards, 2-of-3 quorum with the four-eyes rule (same person twice → `409`), one-use permission, bank verification with the Fabric public key, and both attacks (`401`, `403`). Same views and the same bank rules as the real pages.
+
+**Why part of it is simulated.** Creating Thao's and Minh's Tide accounts failed on the Tide network side during the event, in this order: *"could not reach enough NEW ORKs (7 of 20)"*, *"aggregate shard signature didn't pass"*, *"signature verification didn't pass"*, then *"This action isn't available on your current plan… user limit"* (after only one account on a fresh licence), and finally licence creation itself failed with `Midgard.FinalizeWallet … 500`. The organisers then confirmed the network was overloaded and asked teams to simulate sign-in, roles and access checks. The real approval code (`app/src/lib/iga.ts`, browser → `/iga/change-requests/{id}/approve` with enclave signing) is written but could not be exercised with three real accounts.
 
 **Limitations by design**
 - **Session compromise = approver compromise.** Tide attests *whoever holds this session holds this role*. A scammer controlling both Mom's and a child's device would satisfy the rule.
@@ -313,6 +320,7 @@ node scripts/attack-forge.mjs
 ## 12. How we built it
 
 - **Idea selection:** two team members each proposed ideas, then cross-reviewed them. An *AI-agent wallet* idea was dropped after checking Tide's documentation: custom Forseti contracts are not self-service, and autonomous agents cannot hold Tide identities. KinKey uses features available today (IGA/QEA, Fabric-signed tokens).
+- **Planned with Tide's MCP:** `tide_choose_scenario` matched KinKey to the `iga-admin-governance` scenario and its playbook sequence; the resulting integration map is in [docs/TIDECLOAK_PLAN.md](docs/TIDECLOAK_PLAN.md).
 - **Tide knowledge from the source:** every Tide-specific step followed the official agent-pack playbooks served by Tide's MCP server (`start-tidecloak-dev`, `bootstrap-realm-from-template`, `initialize-admin-and-link-account`, `add-auth-nextjs-fresh`, `setup-iga-admin-panel`, `verify-jwt-server-side`).
 - **AI-assisted development:** code was written with Claude Code, with humans owning the idea, the decisions, every Tide account and approval, and the review.
 
