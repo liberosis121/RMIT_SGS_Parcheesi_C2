@@ -33,7 +33,7 @@ npm run dev
 
 | Cảnh | Thời gian | Cửa sổ | Bấm gì | Lời thoại (EN) |
 |---|---|---|---|---|
-| **D1** Đăng nhập | 0:48–0:56 (8s) | Mom | Trang thật `localhost:3000` → **Sign in with Tide** → vào app, chip **Mom (Lan) · Account owner**. (Chưa quay được cảnh thật thì dùng `/sim/signin`) | *"Each family member signs in with their own Tide identity. No one shares a password."* |
+| **D1** Đăng nhập | 0:48–0:56 (8s) | Mom | `/sim/signin` → gõ `mom` / `demo` → **Sign in** → vào Ví, chip **Mom (Lan) · Account owner** (KHÔNG dùng trang thật, quay toàn bộ trên `/sim`) | *"Each family member signs in with their own Tide identity. No one shares a password."* |
 | **D2** Chuyển nhỏ | 0:56–1:04 (8s) | Mom · **Wallet** | **Ben Thanh Market** → **₫2,000,000** → **Send now** → *Sent* | *"Groceries under ten million go straight through."* |
 | **D3** Bị giữ lại | 1:04–1:14 (10s) | Mom · **Wallet** → **Approvals** | **Captain Hung** → **₫200,000,000** → **Request approval** → thẻ vàng *Waiting for family approval* → **Approvals** → **Approve** → **Confirm and sign** → **1 of 2** | *"A scammer pushes two hundred million. It's held: Mom's key is only one of two."* |
 | **D4** Thảo từ chối | 1:14–1:24 (10s) | Thao · **Approvals** | Thẻ **₫200,000,000 to Captain Hung**, banner đỏ → **Deny** → *Denied* | *"Thao sees a first-time recipient, calls Mom, and denies it."* |
