@@ -6,6 +6,28 @@ Hằng đã dựng xong **intro 48 giây** (tình huống + ý tưởng). Phần
 Quay trên chế độ **Simulated TideCloak** (`http://localhost:3000/sim`), riêng cảnh D1 dùng **đăng nhập Tide thật** của Mom nếu đã quay được.
 Quay **từng cảnh riêng** (`Win + Alt + R`), cắt sát khi dựng. Mỗi cảnh **chỉ làm đúng 1 việc**.
 
+### Chạy dự án trên máy của bạn (cho Hằng / Sỹ, khoảng 5 phút)
+
+Chế độ `/sim` **chỉ cần app**, không cần Docker, TideCloak hay MockBank. Cần **Node.js 20 trở lên** (kiểm tra: `node -v`) và Git.
+
+```bash
+git clone https://github.com/liberosis121/RMIT_SGS_Parcheesi_C2.git
+cd RMIT_SGS_Parcheesi_C2/app
+npm install
+npm run dev
+```
+
+- `npm install` tải khoảng vài trăm MB, nên dùng mạng ổn định. Lần đầu `npm run dev` mất 20–40 giây để biên dịch.
+- Thấy dòng `Ready` / `Local: http://localhost:3000` thì mở **http://localhost:3000/sim**. Lần mở trang đầu hơi chậm, bình thường.
+- Đăng nhập: **http://localhost:3000/sim/signin** → `mom` / `demo` (tab 1), `thao` / `demo` (tab 2, trình duyệt khác hoặc cửa sổ ẩn danh).
+- Reset dữ liệu demo (mở terminal thứ 2, để nguyên terminal đang chạy app):
+  ```bash
+  curl -X POST localhost:3000/api/sim/reset
+  ```
+  Trên Windows PowerShell: `Invoke-RestMethod -Method Post http://localhost:3000/api/sim/reset`
+- Tắt app: bấm `Ctrl + C` trong terminal đang chạy `npm run dev`.
+- Các trang **thật** (`/`, `/wallet`) **sẽ báo lỗi trên máy khác**, vì cần file cấu hình TideCloak chỉ có trên laptop Yến. Không sao, video dùng `/sim`.
+
 **Chuẩn bị:** 2 cửa sổ cạnh nhau. **Trái = Mom** (Chrome), **phải = Thao** (Edge InPrivate). Cả hai mở `http://localhost:3000/sim`.
 **Trước mỗi lần quay:** chạy `curl -X POST localhost:3000/api/sim/reset` rồi **đăng nhập lại** cả hai tab (`/sim/signin`: Mom `mom`/`demo`, Thao `thao`/`demo`). Thao thử mở `/sim/wallet` sẽ thấy *Access denied*: có thể chèn 2 giây vào D4. Zoom Chrome 110%, ẩn bookmark.
 
