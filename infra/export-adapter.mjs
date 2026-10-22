@@ -17,7 +17,7 @@ for (const d of ['app/data', 'bank/data']) {
 }
 
 // Personas by Keycloak user id (usernames may turn into vuids after Tide linking, ids never change).
-const DISPLAY = { 'ba-lan': ['Bà Lan', 'parent'], thao: ['Thảo', 'child'], minh: ['Minh', 'child'] };
+const DISPLAY = { 'ba-lan': ['Mom (Lan)', 'parent'], thao: ['Thao', 'child'], minh: ['Minh', 'child'] };
 const usersFile = path.join(ROOT, 'data/users.json');
 if (fs.existsSync(usersFile)) {
   const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));

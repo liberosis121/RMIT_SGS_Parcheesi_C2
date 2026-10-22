@@ -1,17 +1,17 @@
 import "./globals.css";
-import { Providers } from "./providers";
-import { Shell } from "@/components/Shell";
+import { Inter } from "next/font/google";
 
-export const metadata = { title: "Khiên Nhà – Ví hai chìa cho gia đình" };
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter", display: "swap" });
+
+export const metadata = {
+  title: "KinKey – Two keys for every big transfer",
+  description: "Parents stay in control of everyday money. Big transfers wait for a second key from someone they trust.",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi">
-      <body>
-        <Providers>
-          <Shell>{children}</Shell>
-        </Providers>
-      </body>
+    <html lang="en" className={inter.variable}>
+      <body>{children}</body>
     </html>
   );
 }

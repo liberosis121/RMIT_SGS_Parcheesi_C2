@@ -1,0 +1,16 @@
+import type { SVGProps } from "react";
+const base = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
+type P = SVGProps<SVGSVGElement>;
+export const IconShield = (p: P) => (<svg {...base} {...p}><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>);
+export const IconUser = (p: P) => (<svg {...base} {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>);
+export const IconCart = (p: P) => (<svg {...base} {...p}><path d="M3 4h2l2.4 11h10.2L20 7H6" /><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /></svg>);
+export const IconBook = (p: P) => (<svg {...base} {...p}><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z" /><path d="M4 21V5" /></svg>);
+export const IconBadge = (p: P) => (<svg {...base} {...p}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 11h18M8 15h3" /></svg>);
+export const IconAlert = (p: P) => (<svg {...base} {...p}><path d="M12 3l10 18H2z" /><path d="M12 10v5M12 18h.01" /></svg>);
+export const IconInfo = (p: P) => (<svg {...base} {...p}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>);
+export const IconLock = (p: P) => (<svg {...base} {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>);
+export const IconArrowUp = (p: P) => (<svg {...base} {...p}><path d="M7 17L17 7M9 7h8v8" /></svg>);
+export const IconCheck = (p: P) => (<svg {...base} {...p}><path d="M5 12l5 5 9-10" /></svg>);
+export const IconKey = (p: P) => (<svg {...base} {...p}><circle cx="8" cy="15" r="4" /><path d="M11 12l9-9M16 7l3 3" /></svg>);
+export const IconPhone = (p: P) => (<svg {...base} {...p}><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /></svg>);
+export const ICONS: Record<string, (p: P) => React.JSX.Element> = { bin: IconBook, cho: IconCart, hung: IconBadge };
