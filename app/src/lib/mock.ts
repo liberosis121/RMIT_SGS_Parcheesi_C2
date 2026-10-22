@@ -10,12 +10,8 @@ export const MOCK_RECIPIENTS: RecipientV[] = [
 
 export const MOCK_TRANSFERS: TransferV[] = [
   {
-    txId: "m1", toId: "hung", toName: "Captain Hung – 'police holding account'", toAccount: "9704999888777", amount: 200000000,
-    requestedAt: ago(4), requestedBy: "Mom (Lan)", status: "waiting", approvals: 1, threshold: 2, approvers: ["Thao"],
-  },
-  {
-    txId: "m2", toId: "bin", toName: "Bin – grandson's tuition", toAccount: "9704000111222", amount: 30000000, note: "Semester 1 tuition",
-    requestedAt: ago(60 * 26), requestedBy: "Mom (Lan)", status: "completed", approvals: 2, threshold: 2, approvers: ["Thao", "Mom (Lan)"], canLock: true,
+    txId: "m2", toId: "bin", toName: "Bin – grandson's tuition", toAccount: "9704000111222", amount: 30000000, note: "Semester 2 tuition",
+    requestedAt: ago(35), requestedBy: "Mom (Lan)", status: "approved", approvals: 2, threshold: 2, approvers: ["Mom (Lan)", "Thao"],
   },
   {
     txId: "m3", toId: "cho", toName: "Ben Thanh Market – groceries", toAccount: "9704000333444", amount: 900000, note: "Groceries",
@@ -30,11 +26,11 @@ export const MOCK_TRANSFERS: TransferV[] = [
 export const MOCK_REQUESTS: RequestV[] = [
   {
     id: "r1", kind: "transfer", amount: 200000000, toName: "Captain Hung – 'police holding account'", toAccount: "9704999888777",
-    requestedBy: "Mom (Lan)", requestedAt: ago(4), isNewRecipient: true, approvals: 1, threshold: 2, approvers: ["Minh"],
+    requestedBy: "Mom (Lan)", requestedAt: ago(4), isNewRecipient: true, approvals: 1, threshold: 2, approvers: ["Mom (Lan)"],
   },
   {
     id: "r2", kind: "transfer", amount: 30000000, toName: "Bin – grandson's tuition", toAccount: "9704000111222", note: "Semester 2 tuition",
-    requestedBy: "Mom (Lan)", requestedAt: ago(35), isNewRecipient: false, approvals: 0, threshold: 2, approvers: [],
+    requestedBy: "Mom (Lan)", requestedAt: ago(35), isNewRecipient: false, approvals: 1, threshold: 2, approvers: ["Mom (Lan)"],
   },
 ];
 
