@@ -1,37 +1,48 @@
-# RMIT_SGS_Parcheesi_C2: _[Project name TBD]_
+# RMIT_SGS_Parcheesi_C2: Khiên Nhà – Family Shield
 
-> **One-sentence description:** _[TBD: what our app makes possible, in one sentence]_
+> **Khiên Nhà is a two-key family wallet: an elderly parent's large transfers only go through when a child they chose also approves, and no server, database or admin can fake that approval.**
 
 Submission of **Team Parcheesi** (RMIT Saigon South) for **Challenge 2: Tide UNLOCKED** at RMIT Hackathon 2026.
 
 ---
 
-## Project overview (≤ 300 words)
+## Project overview
 
 ### 1. Vision & originality
-_[TBD: the new possibility we chose to build and why it hasn't been possible before.]_
+Phone scams don't break passwords; they persuade the real owner. Social engineering is prompt injection aimed at humans. Khiên Nhà lets elderly parents keep everyday control, while transfers of 10 million VND or more wait for a second key held by a child they chose.
 
 ### 2. Trust constraint insight
-_[TBD: which trust, privacy or security trade-off holds it back today, and who has to be trusted.]_
+Biometrics prove it is really Mom pressing "send"; in a scam, that is exactly the problem. Today's only fix is handing power to someone: a child who could drain the account, or a vendor whose "co-sign" rule is a database row any admin can edit.
 
 ### 3. Value & impact
-_[TBD: who benefits and what changes for them.]_
+Vietnamese lost an estimated 18,900 billion VND (~US$744M) to online scams in 2024. Parents stay independent for small payments; families get a pause button on the one transfer that could wipe out their savings.
 
 ### 4. Why TideCloak matters
-_[TBD: why this would NOT work the same with ordinary login and backend permissions; how Emergent Authority (no single admin, server or vendor can override protections) changes what the app can credibly do.]_
+With ordinary login, the rule lives in our database and the signing key on our server. With TideCloak, the right to move a large sum is a role that only appears after the parent and a child each approve from their own browser (quorum-enforced authorization). Tokens are signed by the Tide Fabric, so no server holds the key, and changing the rule needs the same quorum. The same pattern could let an AI agent safely hold a wallet.
 
 ### 5. Prototype & storytelling
-_[TBD: what the demo shows, step by step.]_
+Mom sends 2 million VND alone. A fake police officer pushes her to send 200 million; it waits. Our developer, with full server access, forges an approval; the bank rejects it. Her daughter spots the strange recipient and denies it, then approves a real tuition payment, logged.
 
 ---
 
 ## Demo video
 
-_[TBD: `demo.mp4`, 2 minutes, < 100 MB]_
+[`demo.mp4`](demo.mp4) _(TBD: 2 minutes, < 100 MB)_
 
 ## Setup
 
-_[TBD: how to run TideCloak and the app locally.]_
+_[TBD: filled in once the prototype runs.]_ Planned stack:
+
+- **TideCloak** dev server: Docker image `tideorg/tidecloak-dev`, port `8080`, realm `khien-nha` with quorum-enforced authorization (IGA) enabled
+- **Khiên Nhà app**: Next.js, port `3000`
+- **MockBank**: Express, port `4000`. Verifies TideCloak-issued JWTs against the realm's public key
+
+## Limitations (honest scope of this prototype)
+
+- **Session compromise = approver compromise.** Tide proves *whoever holds this session holds this role*. If a scammer controls both the parent's and the child's devices, the rule is satisfied.
+- **MockBank is ours.** It plays the independent verifier that, in real life, would be the bank, and only trusts TideCloak's public key.
+- _[TBD after mentor check: whether a `master`-realm admin can bypass the realm's quorum.]_
+- All people, accounts and transactions are synthetic.
 
 ## Team Parcheesi
 
@@ -43,10 +54,6 @@ _[TBD: how to run TideCloak and the app locally.]_
 
 ## About the challenge
 
-**Tide UNLOCKED:** _"What would you build if trust stopped being the bottleneck?"_
-
-Build a small working prototype with **TideCloak** integrated that demonstrates one new possibility currently held back by a trade-off between power and trust, and explain why removing unilateral control makes it possible. The prototype uses synthetic data and mocked systems.
-
-**Emergent Authority:** TideCloak lets an app perform sensitive actions without giving any single administrator, server or vendor the power to override its protections. Authority only *emerges* when the right identity, policy and approvals line up. There is no reusable master key.
+**Tide UNLOCKED:** _"What would you build if trust stopped being the bottleneck?"_ Build a small working prototype with **TideCloak** that demonstrates one new possibility held back by a trade-off between power and trust, where authority only *emerges* when the right identity, policy and approvals line up, and no single administrator, server or vendor can override it.
 
 Resources: [Tide UNLOCKED](https://tide.org/unlocked/#challenge) · [TideCloak Quickstart](https://docs.tide.org/get-started/Tidecloak%20Quickstart) · [Tide agent plugins / MCP](https://tide.org/agent-plugins)

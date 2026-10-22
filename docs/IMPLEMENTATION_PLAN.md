@@ -2,6 +2,7 @@
 
 **Team:** Parcheesi · **Repo / tên nhóm nộp:** `RMIT_SGS_Parcheesi_C2`
 **Người làm C2:** Yến + Hằng (Sỹ làm C1)
+**Ý tưởng đã chốt (11:50):** **Khiên Nhà – Family Shield**. Chi tiết: [TrucHang_proposal.md](TrucHang_proposal.md), lý do chọn: [KimYen_Rebuttal.md](KimYen_Rebuttal.md)
 **Deadline:** **18:00 hôm nay, 22/10/2026**. Từ 18:00 trở đi **không push gì nữa**.
 
 ---
@@ -10,124 +11,141 @@
 
 - [ ] Repo GitHub **public**, tên `RMIT_SGS_Parcheesi_C2` (repo này)
 - [ ] App chạy được, **có tích hợp TideCloak**, dùng dữ liệu giả
-- [ ] `README.md`: 1 câu mô tả + overview **≤ 300 chữ** đủ 5 mục + mục **Setup** riêng
-- [ ] `demo.mp4`: **2 phút**, **< 100 MB**, nằm trong repo
+- [x] `README.md`: 1 câu mô tả + overview đủ 5 mục (**hiện 297 chữ, giữ ≤ 300**)
+- [ ] `README.md`: mục **Setup** và **Limitations** điền xong
+- [ ] `demo.mp4`: **2 phút**, **< 100 MB**, nằm ở gốc repo
 - [ ] Nộp link repo qua Google Form `forms.gle/HRHYjnqB86j1LFS97`, tên nhóm `RMIT_SGS_Parcheesi_C2`
-
-**Bài test sống còn:** *"Nếu thay TideCloak bằng login + phân quyền bình thường, app có chạy y hệt không?"* Nếu **có**, ý tưởng còn yếu và phải sửa.
 
 ---
 
-## 2. Phân vai
+## 2. Spec Khiên Nhà (một trang)
+
+| | |
+|---|---|
+| **Câu mô tả** | Ví hai chìa cho gia đình: khoản chuyển lớn của bố mẹ chỉ đi được khi có thêm một người con (do bố mẹ chọn) duyệt. Server, DB hay admin đều không giả được lượt duyệt |
+| **Vai** | **Bà Lan** (mẹ, 68 tuổi, chủ tài khoản 850.000.000đ) · **Thảo** (con gái, người duyệt) · **Minh** (con trai, người duyệt) · **Dev** (nhóm mình, có root server, *không được tin*) |
+| **Hành động nhạy cảm** | Chuyển khoản **≥ 10 triệu** |
+| **Luật** | < 10 triệu: bà Lan tự chuyển · ≥ 10 triệu: cần bà Lan **+ ít nhất 1 người con** duyệt · Người con không tự khởi tạo giao dịch · Đổi luật cũng cần quorum |
+| **Cơ chế Tide** | QEA/IGA: giao dịch lớn = change request gán role `chuyen-khoan-lon` (hoặc role riêng cho từng giao dịch, xem 4.3) → đủ người duyệt thì role xuất hiện trong token do **Tide Fabric ký** → MockBank kiểm token |
+| **Người nhận giả** | "Cháu Bin" (học phí 30 triệu) · "TK tạm giữ – Đại úy Hùng" (lừa đảo, 200 triệu) |
+
+### Kiến trúc
+```
+[Trình duyệt bà Lan / Thảo / Minh] ── đăng nhập + DUYỆT gọi THẲNG ──► [TideCloak :8080, realm khien-nha, bật IGA]
+        │                                                                 │ token ký bởi Tide Fabric
+        ▼                                                                 ▼
+[Khiên Nhà – Next.js :3000] ── giao dịch + access token ──► [MockBank – Express :4000]
+                                                             kiểm JWT bằng createLocalJWKSet(config.jwk)
+```
+
+---
+
+## 3. Phân vai
 
 | | **Yến: Builder** | **Hằng: Story & QA** |
 |---|---|---|
-| Vai chính | Cài TideCloak, điều khiển Claude Code để viết app, git push | README, kịch bản và quay video, dữ liệu giả, test app |
-| Phụ trách README | Mục **Setup** | Mục **Overview (5 phần)** + câu mô tả |
-| Phụ trách video | Chạy app trên máy khi quay | Viết kịch bản, đọc lời, dựng video, nén < 100MB |
+| Vai chính | Cài TideCloak, điều khiển Claude Code + Tide MCP, viết app, git push | README, kịch bản và dựng video, dữ liệu giả, test app, hỏi mentor |
+| README | Mục **Setup** | Giữ overview ≤ 300 chữ, mục **Limitations** |
+| Video | Thao tác app khi quay | Kịch bản, đọc lời, dựng, nén < 100MB |
 | Nộp bài | Push lần cuối | Kiểm tra repo bằng tab ẩn danh, **điền Google Form** |
-
-Cả hai cùng làm phần **lên ý tưởng** (bước 0).
 
 ---
 
-## 3. Timeline (theo agenda)
+## 4. Build: Yến làm theo thứ tự này
+
+### 4.1. Các playbook Tide MCP cần dùng (theo thứ tự)
+1. `start-tidecloak-dev`: chạy TideCloak bằng Docker
+2. `add-auth-nextjs-fresh`: scaffold Next.js + đăng nhập (`npm init @tidecloak/nextjs@latest`, có bước **đăng ký tài khoản Tide**, cần làm cho cả 3 user)
+3. `setup-iga-admin-panel`: giao diện xem và **duyệt change request ngay trong app**
+4. `verify-jwt-server-side`: MockBank kiểm token
+
+Gợi ý mở đầu cho Claude Code: *"Use the Tide MCP. Call tide_choose_scenario for: a family wallet where an elderly parent's transfers ≥ 10M VND need a child's approval via IGA change requests that grant a role; a separate Express MockBank verifies the Fabric-signed JWT with createLocalJWKSet. Then follow the playbooks start-tidecloak-dev, add-auth-nextjs-fresh, setup-iga-admin-panel, verify-jwt-server-side."*
+
+### 4.2. ⚠️ Ba luật không được phá
+1. **Nút "Duyệt" gọi thẳng từ trình duyệt** lên `POST {TideCloak}/admin/realms/khien-nha/iga/change-requests/{id}/approve` bằng token của chính người duyệt. **Không đi qua server Next.js.** Đi qua server thì lượt duyệt bị tính cho tài khoản server và bộ đếm kẹt ở 1/2.
+2. **MockBank dùng `createLocalJWKSet(config.jwk)`** từ file adapter, không lấy JWKS qua mạng.
+3. **Không lưu doken / token trên server**, không commit file `.env` hay mật khẩu.
+
+### 4.3. Hai thử nghiệm có giới hạn giờ
+| Thử | Mục đích | Giới hạn | Nếu không được |
+|---|---|---|---|
+| Ngưỡng duyệt riêng cho role (`iga.approverRole` + `iga.threshold` trên role `chuyen-khoan-lon`) | Bà Lan và các con không cần làm `tide-realm-admin` | **20 phút**, chốt 14:00 | Dùng thiết kế của Hằng: cả 3 là `tide-realm-admin`, ngưỡng 2/3 |
+| Role riêng cho từng giao dịch (`tx-<id>-<số tiền>-to-<TK>`) | Lượt duyệt gắn đúng số tiền + người nhận | Chốt **14:30** | Dùng role chung `chuyen-khoan-lon`, ghi giới hạn vào README |
+
+### 4.4. Lưu ý khi demo
+- Sau khi duyệt, role có thể **trễ tới 120 giây** mới vào token: **đăng nhập lại** hoặc cắt đoạn chờ trong video.
+- Mỗi người dùng **một cửa sổ ẩn danh / profile trình duyệt riêng** để đăng nhập song song 3 tài khoản.
+
+---
+
+## 5. Timeline (theo agenda, cập nhật 11:55)
 
 | Giờ | Yến (Builder) | Hằng (Story & QA) |
 |---|---|---|
-| **11:00 – 11:45** | **CẢ HAI: chốt ý tưởng** (xem mục 4). Trong lúc bàn, Yến cho máy chạy `docker pull` image TideCloak | |
-| **11:45 – 12:00** | Chạy container TideCloak (cổng 8080), cài **Tide MCP** vào Claude Code | Viết nháp câu mô tả + mục 1–2 của README |
+| **11:55 – 12:00** | `docker pull tideorg/tidecloak-dev:latest` (để chạy trong giờ ăn) | **Hỏi mentor câu realm `master`** (mục 7) |
 | **12:00 – 13:00** | 🍱 Ăn trưa | 🍱 Ăn trưa |
-| **13:00 – 14:00** | Dựng khung app + login bằng TideCloak (theo Quickstart / MCP) | Tạo **dữ liệu giả** (tên người, giao dịch…), viết **kịch bản video** từng câu |
-| **14:00** | ⛳ **Checkpoint 1:** login TideCloak chạy được. Chưa được thì hỏi Discord #support hoặc mentor **ngay** | |
-| **14:00 – 15:30** | Làm **luồng demo chính** (mục 5): hành động nhạy cảm cần đủ người duyệt mới chạy | Viết mục 3–5 README; test app lúc Yến xong từng phần, báo lỗi |
-| **15:30** | ⛳ **Checkpoint 2: FEATURE FREEZE.** Luồng demo chính chạy từ đầu đến cuối. Sau mốc này **không thêm tính năng** | |
-| **15:30 – 16:00** | Sửa lỗi Hằng báo; viết mục **Setup** | Chạy thử toàn bộ kịch bản demo trên app thật; đếm chữ README (≤ 300) |
-| **16:00 – 16:30** | 🎬 **CẢ HAI: QUAY VIDEO** (Yến thao tác, Hằng đọc lời / chỉ đạo). Quay 2–3 lần, chọn lần tốt nhất | |
-| **16:30 – 17:00** | Dọn repo (xoá file thừa, kiểm tra `.gitignore`, không có mật khẩu/secret) | Cắt ghép video, nén thành `demo.mp4` < 100MB |
+| **13:00 – 13:30** | Playbook 1–2: TideCloak chạy, Next.js đăng nhập được | Tạo **3 tài khoản Tide** cùng Yến (bà Lan, Thảo, Minh); viết **dữ liệu giả** JSON |
+| **13:30 – 14:00** | Bật IGA trên realm `khien-nha`, tạo role; thử 4.3 (ngưỡng riêng) | Viết **kịch bản video** từng câu (mục 6) |
+| **14:00** | ⛳ **Checkpoint 1:** đăng nhập + tạo được change request. Chưa được thì hỏi Discord #support / mentor **ngay** | |
+| **14:00 – 15:30** | Luồng < 10tr → luồng ≥ 10tr (tạo CR → duyệt trong app → token có role → MockBank chuyển) → nút Từ chối → lịch sử → script "dev giả token". Chốt 4.3 role theo giao dịch lúc **14:30** | Test từng phần khi Yến xong, báo lỗi; điền mục **Limitations** theo câu trả lời của mentor |
+| **15:30** | ⛳ **Checkpoint 2: FEATURE FREEZE.** Cảnh 1–3 + 6 ở mục 6 phải chạy được. Sau mốc này **không thêm tính năng** | |
+| **15:30 – 16:00** | Sửa lỗi; viết mục **Setup** | Chạy thử toàn bộ kịch bản trên app thật; đếm chữ README (≤ 300) |
+| **16:00 – 16:30** | 🎬 **CẢ HAI: QUAY VIDEO** (Yến thao tác, Hằng đọc lời). Quay 2–3 lần | |
+| **16:30 – 17:00** | Dọn repo (file thừa, `.gitignore`, không có secret) | Dựng video, nén `demo.mp4` < 100MB |
 | **17:00 – 17:20** | Push code + README + `demo.mp4` | Đọc lại README lần cuối |
-| **17:20 – 17:40** | ⛳ **Checkpoint 3:** mở repo bằng **tab ẩn danh**: public? README hiện đúng? video tải về xem được? | **Điền Google Form** |
-| **17:40 – 18:00** | Dự phòng. Chỉ sửa lỗi nhỏ (typo). **18:00 dừng hẳn** | |
+| **17:20 – 17:40** | ⛳ **Checkpoint 3:** mở repo bằng **tab ẩn danh**: public? README đúng? video xem được? | **Điền Google Form** |
+| **17:40 – 18:00** | Dự phòng, chỉ sửa typo. **18:00 dừng hẳn** | |
 
 ---
 
-## 4. Bước 0: Lên ý tưởng (cả hai, 11:00 – 11:45)
+## 6. Demo & kịch bản video 2 phút
 
-### 4.1. Brainstorm (15 phút)
-Mỗi người nghĩ 2–3 ý theo công thức:
-> "Ở đâu đang có **một người/một tổ chức nắm toàn quyền**, và vì phải tin họ nên **có việc hay ho không làm được**?"
+| # | Cảnh | Bắt buộc? | Chứng minh |
+|---|---|---|---|
+| 1 | Bà Lan, Thảo, Minh đăng nhập bằng TideCloak | ✅ MVP | Đăng nhập Tide |
+| 2 | Bà Lan chuyển 2 triệu cho cháu → xong ngay | ✅ MVP | Bố mẹ vẫn tự chủ |
+| 3 | "Đại úy Hùng" gọi điện; bà Lan chuyển 200 triệu → **"Chờ người thân duyệt"** | ✅ MVP | Giao dịch lớn bị giữ lại |
+| 4 | Dev sửa DB thành `approved` + gửi token tự ký → MockBank **401** | ⭐ Nên có | Người có root server cũng bị chặn |
+| 5 | Thảo thấy người nhận lạ → **Từ chối** | ⭐ Nên có | Chìa thứ hai hoạt động |
+| 6 | Bà Lan chuyển 30 triệu học phí, Thảo duyệt → **thành công**, lịch sử ghi ai duyệt | ✅ MVP | Quyền chỉ xuất hiện khi đủ người |
+| 7 | Tài khoản Minh bị chiếm, kẻ gian gỡ Thảo khỏi người duyệt → **chờ quorum** | Nếu kịp | Đổi luật cũng cần quorum |
 
-Gợi ý sẵn:
-| Ý tưởng | Ai đang nắm toàn quyền? | Với TideCloak thì sao? |
+| Thời lượng | Phần | Lời dẫn chính |
 |---|---|---|
-| ⭐ **Quỹ lớp / quỹ từ thiện cộng đồng**: chi tiền cần 2/3 người trong ban quỹ duyệt | Thủ quỹ, admin app | Không ai tự chi được, kể cả người viết app |
-| **Hồ sơ bệnh án**: bác sĩ xem hồ sơ khi bệnh nhân + người phụ trách cùng đồng ý | Admin bệnh viện, DB admin | Admin cũng không đọc trộm được |
-| **Sửa điểm sinh viên**: cần giảng viên + trưởng khoa duyệt | IT admin của trường | IT không tự sửa điểm được |
-| **AI agent dùng dữ liệu cá nhân**: AI chỉ truy cập khi người dùng duyệt | Server giữ token của AI | AI / server không tự lấy dữ liệu được |
+| 0:00 – 0:20 | **The possibility** | *"Phone scams are prompt injection, aimed at humans."* Lừa đảo không phá mật khẩu, nó thuyết phục chính chủ |
+| 0:20 – 0:45 | **The constraint** | Sinh trắc học chỉ chứng minh đúng là mẹ. Cách duy nhất hiện nay là trao quyền cho con hoặc cho một công ty |
+| 0:45 – 1:40 | **The prototype** | Cảnh 2 → 6, chỉ rõ TideCloak làm gì |
+| 1:40 – 2:00 | **What changes** | *"Scammers don't hack passwords, they hack people. Khiên Nhà makes sure no single person (not Mom under pressure, not a hijacked phone, not even our server) can move a lifetime of savings alone."* |
 
-### 4.2. Chấm điểm và chọn 1 (15 phút)
-Chấm mỗi ý 1–5 điểm theo:
-1. **Qua bài test "login thường"?** (bắt buộc ≥ 4)
-2. **Demo dễ hiểu trong 2 phút?** Có cảnh "kẻ xấu/admin thử làm một mình → bị chặn" không?
-3. **Đủ nhỏ để code xong trước 15:30?**
-4. **Mới lạ?** (ý bệnh viện chắc nhiều nhóm làm)
-
-Có thể hỏi **Hackbot** trên trang tide.org/unlocked để xin nhận xét ý tưởng.
-
-### 4.3. Chốt ra 1 tờ "spec" (15 phút), điền vào đây
-
-- **Tên app:** …
-- **Câu mô tả 1 dòng:** …
-- **Các vai (role):** … (ví dụ: Thủ quỹ, Thành viên ban quỹ ×2, Người xem)
-- **Hành động nhạy cảm:** … (ví dụ: chi tiền từ quỹ)
-- **Luật duyệt:** … (ví dụ: cần 2/3 thành viên ban quỹ đồng ý)
-- **Cảnh "bị chặn" trong demo:** … (ví dụ: thủ quỹ / admin cố chi một mình → thất bại)
-- **Cảnh "thành công":** … (ví dụ: đủ 2 người duyệt → giao dịch được thực hiện)
-
-Spec này là thứ Yến đưa cho Claude Code để build, và Hằng dùng để viết README + video.
+Công cụ quay: **OBS** hoặc **Xbox Game Bar** (`Win + Alt + R`). Nén: HandBrake hoặc Clipchamp.
 
 ---
 
-## 5. Luồng demo chính (định nghĩa "XONG")
+## 7. Câu hỏi cho mentor / Discord #support (Hằng hỏi trước 13:00)
 
-App coi là xong khi chạy được **đúng 4 bước** sau, không cần hơn:
-1. Đăng nhập bằng TideCloak (ít nhất 2–3 user giả với vai khác nhau)
-2. Một người **yêu cầu** hành động nhạy cảm
-3. **Một mình** người đó (hoặc admin) cố thực hiện → **bị chặn**
-4. Đủ người **duyệt** → hành động **thành công**, có hiển thị lịch sử ai đã duyệt
-
-Giao diện đơn giản là được, **chạy ổn quan trọng hơn đẹp**.
+1. *"Can a `master`-realm admin change roles in a realm with IGA enabled without going through the quorum?"* Nếu **có**: README ghi rõ là giới hạn, video nói "our server and database" chứ không nói "nobody".
+2. *"Does a role-level `iga.approverRole` / `iga.threshold` apply in Tide MultiAdmin mode, or only the realm admin policy threshold?"*
+3. *"Can the app create a role-assignment change request with a user's own token, and approvers approve it from our own UI?"*
 
 ---
 
-## 6. Kịch bản video 2 phút (Hằng viết chi tiết)
-
-| Thời lượng | Phần | Nội dung |
-|---|---|---|
-| 0:00 – 0:20 | **The possibility** | Chúng tôi xây gì |
-| 0:20 – 0:45 | **The constraint** | Hiện nay vướng niềm tin ở đâu, ai đang nắm toàn quyền |
-| 0:45 – 1:40 | **The prototype** | Demo 4 bước ở mục 5, chỉ rõ TideCloak làm gì |
-| 1:40 – 2:00 | **What changes** | Người dùng được gì |
-
-Công cụ quay: **OBS** hoặc **Xbox Game Bar** (`Win + Alt + R`). Nén video: HandBrake hoặc Clipchamp (có sẵn trên Windows).
-
----
-
-## 7. Phương án dự phòng
+## 8. Phương án dự phòng
 
 | Sự cố | Xử lý |
 |---|---|
-| Tide MCP không cài được | Dùng template **TideCloak Quickstart** (docs.tide.org) |
-| TideCloak chưa chạy được lúc 14:00 | Hỏi **Discord #support** + mentor tại phòng ngay, không tự loay hoay quá 20 phút |
-| Không kịp làm đủ tính năng | Cắt bớt, chỉ giữ 4 bước ở mục 5 |
-| Video > 100MB | Nén lại 720p trong HandBrake |
-| Gần 18:00 vẫn còn lỗi | Ghi chú lỗi trong README, **vẫn nộp đúng giờ**. Nộp muộn thì mất hết |
+| Tide MCP không cài được vào Claude Code | Dùng template **TideCloak Quickstart**; Tide MCP vẫn gọi được bằng `curl` tới `https://mcp.tide.org/mcp` |
+| TideCloak chưa chạy được lúc 14:00 | Hỏi **Discord #support** + mentor ngay, không loay hoay quá 20 phút |
+| Duyệt trong app không chạy được | Duyệt trên **tide-console** (hộp QEA Approvals), quay video ở đó |
+| Không kịp | Cắt còn cảnh 1, 2, 3, 6 |
+| Video > 100MB | Nén lại 720p bằng HandBrake |
+| Gần 18:00 vẫn còn lỗi | Ghi chú lỗi trong README, **vẫn nộp đúng giờ** |
 
 ---
 
-## 8. Luật quan trọng cần nhớ
+## 9. Luật quan trọng cần nhớ
 
-- **Không đổi tên repo** sau khi nộp form (đổi tên thì link đổi theo)
+- **Không đổi tên repo** sau khi nộp form
 - **Không commit mật khẩu, token, file `.env`**
 - **Không sửa repo sau 18:00**
-- README overview **≤ 300 chữ**; mục Setup để riêng, không tính vào 300 chữ
+- README overview **≤ 300 chữ** (mục Setup và Limitations không tính)
+- **Không nói quá** trong README / video: nói đúng những gì app chứng minh được
