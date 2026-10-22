@@ -77,10 +77,10 @@ challenge2/
   - initialize Tide realm with `TIDE_LICENSE_EMAIL` / `TIDE_TERMS_ACCEPTED` from `.env`, enable IGA,
     drain pending change requests while still in FirstAdmin mode (the playbook's `approve_all_pending`)
   - make sure the app client's tokens include `mock-bank` client roles (`resource_access.mock-bank.roles`)
-- [ ] Ask the MCP before going on: `tide_canon '{"name":"iga-change-requests-api","section":"Threshold"}'`.
+- [x] Ask the MCP before going on: `tide_canon '{"name":"iga-change-requests-api","section":"Threshold"}'`.
 
 ### Phase 3 – Users + invite links (target 13:50) → 🧑 HUMAN CHECKPOINT H1
-- [ ] Read `initialize-admin-and-link-account`. Write `infra/create-users.sh` creating **`ba-lan`, `thao`, `minh`**
+- [x] Read `initialize-admin-and-link-account`. Write `infra/create-users.sh` creating **`ba-lan`, `thao`, `minh`**
       and printing one invite link each. Follow the playbook's canonical order
       (create user → drain → mint invite → enroll → drain → sign IdP settings → grant tide-realm-admin → final drain).
 - [ ] 🧑 **STOP (H1).** Report the 3 invite links to the user (in chat only, never in a file in git). Tell them:
@@ -93,7 +93,7 @@ challenge2/
       or do them from the app's approvals page once Phase 5 exists (then reorder: build Phase 4–5 first). Target:
       3 admins → quorum threshold **2** (`max(1, floor(0.7×3))`), i.e. **Bà Lan + one child**. The dev bootstrap
       admin is **not** a `tide-realm-admin` of `khien-nha`.
-- [ ] `infra/export-adapter.sh`: export the adapter with **`vendorResources/get-installations-provider`**
+- [x] `infra/export-adapter.mjs` (done early; re-run after enrollment): export the adapter with **`vendorResources/get-installations-provider`**
       (not the standard Keycloak path); check `jwk`, `vendorId`, `homeOrkUrl` exist; copy to `app/data/` and `bank/data/`.
 
 ### Phase 4 – Next.js app skeleton + login (target 14:15, parallel with H1/H2 waits)
@@ -194,3 +194,6 @@ rejects a ≥ 10M transfer without the approval role.
 - 12:25 Docker Desktop was stopped; started it from D:\Docker\DockerDesktop. No `jq` on this machine, so infra scripts after Phase 1 are Node (.mjs) instead of bash+jq. Pack templates fetched to `.tide-pack/` (gitignored) via https://mcp.tide.org/pack/templates.tgz; realm template at `.tide-pack/templates/shared/realm.json.template`.
 - Phase 1 done: `infra/start-tidecloak.sh` runs the container without sudo, using `MSYS_NO_PATHCONV=1` and a `pwd -W` host path for the volume; TideCloak answered 302 on :8080 within ~30 s.
 - Phase 2 done (12:27): `infra/bootstrap-realm.mjs` (Node, uses `infra/lib.mjs`) -> realm `khien-nha`, app client `khien-nha-app` (DPoP on), bearer-only client `mock-bank` with role `chuyen-khoan-lon`, audience mapper for mock-bank, licensed, IGA on, 0 pending CRs. Licence returned `CREATED`.
+- Phase 3 partial (12:30): `infra/create-users.mjs` created ba-lan, thao, minh (HTTP 202 each, drained, 0 pending) and minted invite links (printed to terminal + `data/users.json`, gitignored). Finding: the realm user profile marks `email` as required, which blocks creating Tide users without email (AP-85 forbids fake emails) -> script makes email optional via PUT `/users/profile`. `infra/export-adapter.mjs` already works (jwk, vendorId, homeOrkUrl present; written to app/data and bank/data).
+- STOPPED at H1 (waiting for the human to enroll 3 users). Next after resume: `node infra/finish-users.mjs` (verify tideUserKey, drain, sign IdP, grant tide-realm-admin ba-lan first; thao/minh grants may need enclave approval = H2), then `node infra/export-adapter.mjs`, then Phase 4.
+- Open question for after enrollment: Tide may set the Keycloak username to the vuid after linking, so personas must be mapped by user id (`data/users.json`) rather than by username `ba-lan`.
