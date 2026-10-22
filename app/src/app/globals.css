@@ -116,7 +116,7 @@ p { margin: 0; }
 .steps { display: grid; grid-template-columns: repeat(3, 1fr); }
 .step { padding: 0 28px; border-left: 1px solid var(--line); }
 .step:first-child { padding-left: 0; border-left: none; }
-.step-num { font-family: var(--serif); font-size: 2.6rem; font-weight: 500; color: var(--line-2); line-height: 1; margin-bottom: 18px; letter-spacing: -0.02em; }
+.step-num { font-family: var(--serif); font-size: 2.6rem; font-weight: 500; color: var(--accent); line-height: 1; margin-bottom: 18px; letter-spacing: -0.02em; }
 .step h3 { font-size: 1.05rem; margin-bottom: 8px; }
 .step p { color: var(--muted); }
 .fact { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; }
