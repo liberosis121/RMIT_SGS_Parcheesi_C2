@@ -135,8 +135,8 @@ export async function approveCrs(ctx: Ctx, ids: string[]): Promise<ApproveResult
   if (toSign.length) {
     const res = await ctx.approveTideRequests(toSign);
     for (const item of res) {
-      if (item.denied) out[item.id] = { id: item.id, ok: false, detail: "Bạn đã từ chối trong cửa sổ Tide" };
-      else if (!item.approved) out[item.id] = { id: item.id, ok: false, detail: "Chưa ký xong trong cửa sổ Tide" };
+      if (item.denied) out[item.id] = { id: item.id, ok: false, detail: "You declined in the Tide window" };
+      else if (!item.approved) out[item.id] = { id: item.id, ok: false, detail: "Signing in the Tide window was not completed" };
       else {
         const { status, j } = await postApprove(ctx, item.id, { requestModel: bytesToB64(item.approved.request) });
         out[item.id] =
@@ -152,7 +152,7 @@ export async function approveCrs(ctx: Ctx, ids: string[]): Promise<ApproveResult
 /** Only call on a CR you just read as PENDING: deny does not check the status. */
 export async function denyCr(ctx: Ctx, id: string, reason?: string) {
   const fresh = await jget<ChangeRequest>(ctx, `/iga/change-requests/${id}`);
-  if (fresh.status !== "PENDING") throw new Error(`Yêu cầu không còn ở trạng thái chờ (${fresh.status})`);
+  if (fresh.status !== "PENDING") throw new Error(`This request is no longer pending (${fresh.status})`);
   const r = await ctx.secureFetch(`${ADMIN_API}/iga/change-requests/${id}/deny`, {
     method: "POST",
     headers: J,

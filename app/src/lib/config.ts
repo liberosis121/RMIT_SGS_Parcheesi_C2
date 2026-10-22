@@ -22,4 +22,4 @@ export function recipientName(id: string) {
   return seed.recipients.find((r) => r.id === id)?.name ?? id;
 }
 
-export const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(n) + " đ";
+export const vnd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "VND" }).format(n);
