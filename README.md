@@ -31,7 +31,7 @@ Mom sends 2 million VND alone. A fake police officer pushes her to send 200 mill
 
 ## Setup
 
-_[TBD: filled in once the prototype runs.]_ Planned stack:
+_[Full commands are added once the prototype is tested end to end.]_ Architecture, ports and run steps: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Stack:
 
 - **TideCloak** dev server: Docker image `tideorg/tidecloak-dev`, port `8080`, realm `khien-nha` with quorum-enforced authorization (IGA) enabled
 - **Khiên Nhà app**: Next.js, port `3000`
