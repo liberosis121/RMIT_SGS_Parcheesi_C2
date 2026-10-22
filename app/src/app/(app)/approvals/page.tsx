@@ -1,16 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMe, txApi } from "@/lib/useMe";
-import { seed, vnd, recipientName } from "@/lib/config";
+import { seed, recipientName } from "@/lib/config";
 import { approveCrs, approvalCount, denyCr, listCrs, type ChangeRequest } from "@/lib/iga";
 import { approverNames } from "@/lib/names";
+import { money } from "@/lib/format";
+import { ApprovalsView } from "@/components/views/ApprovalsView";
+import type { AdminChangeV, HistoryV, Notice, RequestV } from "@/components/views/types";
 import type { Tx } from "@/lib/types";
 
 const ACTION_LABEL: Record<string, string> = {
-  GRANT_ROLES: "Cấp quyền",
-  REVOKE_ROLES: "Thu hồi quyền",
-  CREATE_ROLE: "Tạo quyền",
+  GRANT_ROLES: "Grant a role",
+  REVOKE_ROLES: "Revoke a role",
+  CREATE_ROLE: "Create a role",
+  CREATE_USER: "Create a user",
+  REGEN_ADMIN_POLICY: "Update the admin approval policy",
 };
 
 export default function ApprovalsPage() {
@@ -19,9 +24,16 @@ export default function ApprovalsPage() {
   const [done, setDone] = useState<ChangeRequest[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const api = txApi(ctx);
+
+  const flash = (n: Notice) => {
+    setNotice(n);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setNotice(null), 7000);
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -29,16 +41,16 @@ export default function ApprovalsPage() {
       setPending(p);
       setDone(
         [...a, ...d]
-          .filter((c) => !["ADOPT"].some((x) => c.actionType.startsWith(x)))
+          .filter((c) => !c.actionType.startsWith("ADOPT"))
           .sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))
           .slice(0, 10)
       );
       setErr(null);
     } catch (e: any) {
       setErr(
-        "Không đọc được danh sách yêu cầu từ TideCloak: " +
+        "Could not read requests from TideCloak: " +
           (e?.message ?? e) +
-          " (chỉ tài khoản có quyền tide-realm-admin mới xem và duyệt được)."
+          " Only accounts with the tide-realm-admin role can view and approve requests."
       );
     }
     try {
@@ -54,11 +66,14 @@ export default function ApprovalsPage() {
     return () => clearInterval(t);
   }, [authenticated, refresh]);
 
-  if (loading) return <p>Đang tải…</p>;
-  if (!authenticated) return <p>Hãy đăng nhập trước.</p>;
+  if (loading) return <main className="container page"><p className="muted">Loading…</p></main>;
+  if (!authenticated) return <main className="container page"><p>Please sign in first.</p></main>;
 
   const txOfCr = (id: string) => txs.find((t) => t.crIds.includes(id) || t.revokeCrId === id);
-  const pendingIds = new Set(pending.map((c) => c.id));
+  const knownRecipient = (tx: Tx) =>
+    seed.history.some((h) => h.to === tx.to) || txs.some((t) => t.to === tx.to && t.status === "EXECUTED");
+
+  // One card per transaction (its CRs grouped), one per unrelated CR.
   const groups: { key: string; tx?: Tx; crs: ChangeRequest[] }[] = [];
   const seen = new Set<string>();
   for (const cr of pending) {
@@ -73,35 +88,84 @@ export default function ApprovalsPage() {
       groups.push({ key: cr.id, crs: [cr] });
     }
   }
+  const groupOf = (id: string) => groups.find((g) => g.key === id)!;
 
-  const knownRecipient = (tx: Tx) =>
-    seed.history.some((h) => h.to === tx.to) || txs.some((t) => t.to === tx.to && t.status === "EXECUTED");
+  const requests: RequestV[] = groups
+    .filter((g) => g.tx)
+    .map((g) => {
+      const tx = g.tx!;
+      const first = g.crs[0];
+      const isLock = !!tx.revokeCrId && g.crs.some((c) => c.id === tx.revokeCrId);
+      return {
+        id: g.key,
+        kind: isLock ? "lock" : "transfer",
+        amount: tx.amount,
+        toName: recipientName(tx.to),
+        toAccount: tx.toAccount,
+        note: tx.note,
+        requestedBy: tx.requestedBy,
+        requestedAt: tx.requestedAt,
+        isNewRecipient: !knownRecipient(tx),
+        approvals: approvalCount(first),
+        threshold: first.threshold ?? 2,
+        approvers: approverNames(first.authorizers ?? []),
+      };
+    });
 
-  async function approve(g: { key: string; crs: ChangeRequest[] }) {
-    setBusy(g.key);
-    setMsg(null);
+  const adminChanges: AdminChangeV[] = groups
+    .filter((g) => !g.tx)
+    .map((g) => ({
+      id: g.key,
+      label: ACTION_LABEL[g.crs[0].actionType] ?? g.crs[0].actionType,
+      approvals: approvalCount(g.crs[0]),
+      threshold: g.crs[0].threshold ?? null,
+      approvers: approverNames(g.crs[0].authorizers ?? []),
+    }));
+
+  const history: HistoryV[] = done.map((c) => {
+    const tx = txOfCr(c.id);
+    return {
+      id: c.id,
+      title: tx ? `${money(tx.amount)} to ${recipientName(tx.to)}` : (ACTION_LABEL[c.actionType] ?? c.actionType),
+      status: c.status === "APPROVED" ? "approved" : "denied",
+      approvers: approverNames(c.authorizers ?? []),
+      when: typeof c.createdAt === "number" || typeof c.createdAt === "string" ? String(c.createdAt) : undefined,
+    };
+  });
+
+  async function approve(key: string) {
+    const g = groupOf(key);
+    setBusy(key);
+    setNotice(null);
     try {
       const res = await approveCrs(ctx, g.crs.map((c) => c.id));
       const bad = res.filter((r) => !r.ok);
-      if (bad.length) setMsg({ ok: false, text: "Chưa duyệt được: " + bad.map((b) => b.detail).join("; ") });
-      else setMsg({ ok: true, text: res.every((r) => r.committed) ? "Đã duyệt. Đủ người duyệt, quyền đã được cấp." : "Đã ghi lượt duyệt của bạn. Còn chờ thêm người duyệt." });
+      if (bad.length) flash({ ok: false, text: "Could not approve: " + bad.map((b) => b.detail).join("; ") });
+      else
+        flash({
+          ok: true,
+          text: res.every((r) => r.committed)
+            ? "Approved. Enough approvals are in, so the permission has been granted."
+            : "Your approval is recorded. Waiting for one more approver.",
+        });
     } catch (e: any) {
-      setMsg({ ok: false, text: e?.message ?? String(e) });
+      flash({ ok: false, text: e?.message ?? String(e) });
     } finally {
       setBusy(null);
       await refresh();
     }
   }
 
-  async function deny(g: { key: string; tx?: Tx; crs: ChangeRequest[] }) {
-    setBusy(g.key);
-    setMsg(null);
+  async function deny(key: string) {
+    const g = groupOf(key);
+    setBusy(key);
+    setNotice(null);
     try {
-      for (const c of g.crs) await denyCr(ctx, c.id, `Từ chối bởi ${persona?.display ?? "người duyệt"}`);
+      for (const c of g.crs) await denyCr(ctx, c.id, `Denied by ${persona?.display ?? "an approver"}`);
       if (g.tx) await api.patch(g.tx.txId, { status: "DENIED", deniedBy: persona?.display });
-      setMsg({ ok: true, text: "Đã từ chối. Giao dịch này sẽ không được thực hiện." });
+      flash({ ok: true, text: "Denied. This transfer will not go through." });
     } catch (e: any) {
-      setMsg({ ok: false, text: e?.message ?? String(e) });
+      flash({ ok: false, text: e?.message ?? String(e) });
     } finally {
       setBusy(null);
       await refresh();
@@ -109,84 +173,15 @@ export default function ApprovalsPage() {
   }
 
   return (
-    <>
-      <h1>Duyệt giao dịch</h1>
-      <p className="warnbox">
-        Lượt duyệt của bạn được gửi thẳng từ trình duyệt này tới TideCloak, ký bằng khoá của chính bạn qua Tide. Server của app
-        không duyệt thay được. Lưu ý: chi tiết số tiền và người nhận dưới đây do app hiển thị; lượt duyệt hiện gắn với quyền
-        &quot;chuyển khoản lớn&quot;, chưa gắn riêng với từng giao dịch.
-      </p>
-      {err && <p className="err">{err}</p>}
-      {msg && <p className={msg.ok ? "okmsg" : "err"}>{msg.text}</p>}
-
-      <h2>Đang chờ duyệt ({groups.length})</h2>
-      {groups.length === 0 && <p className="muted">Không có yêu cầu nào đang chờ.</p>}
-      {groups.map((g) => {
-        const first = g.crs[0];
-        const n = approvalCount(first);
-        const thr = first.threshold;
-        const label = ACTION_LABEL[first.actionType] ?? first.actionType;
-        return (
-          <div className="card" key={g.key}>
-            {g.tx ? (
-              <>
-                <div className="big">
-                  {g.tx.revokeCrId && g.crs.some((c) => c.id === g.tx!.revokeCrId)
-                    ? "Khoá lại quyền chuyển khoản lớn"
-                    : `${g.tx.requestedBy} muốn chuyển ${vnd(g.tx.amount)}`}
-                </div>
-                <div>
-                  Người nhận: <strong>{recipientName(g.tx.to)}</strong> ({g.tx.toAccount})
-                </div>
-                {g.tx.note && <div className="note">Ghi chú: {g.tx.note}</div>}
-                {!knownRecipient(g.tx) && (
-                  <p className="warnbox">Bà chưa từng chuyển tiền cho người nhận này. Hãy gọi điện hỏi lại bà trước khi duyệt.</p>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="big">Thay đổi quản trị: {label}</div>
-                <div className="note">Loại: {first.actionType} · không thuộc giao dịch nào của ví.</div>
-              </>
-            )}
-            <div className="note">
-              Đã duyệt: {n === null ? "?" : n}/{thr ?? "?"}
-              {first.authorizers && first.authorizers.length > 0 && ` (${approverNames(first.authorizers).join(", ")})`}
-              {first.blocked && " · đang chờ yêu cầu phụ thuộc"}
-            </div>
-            <div className="row" style={{ marginTop: ".5rem" }}>
-              <button disabled={busy === g.key} onClick={() => approve(g)}>
-                {busy === g.key ? "Đang xử lý…" : "Duyệt"}
-              </button>
-              <button className="danger" disabled={busy === g.key} onClick={() => deny(g)}>
-                Từ chối
-              </button>
-            </div>
-          </div>
-        );
-      })}
-
-      <h2>Lịch sử gần đây</h2>
-      {done.length === 0 && <p className="muted">Chưa có.</p>}
-      {done.map((c) => {
-        const tx = txOfCr(c.id);
-        return (
-          <div className="card" key={c.id}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>
-                {tx ? `${vnd(tx.amount)} → ${recipientName(tx.to)}` : ACTION_LABEL[c.actionType] ?? c.actionType}
-              </strong>
-              <span className={`badge ${c.status === "APPROVED" ? "ok" : "bad"}`}>
-                {c.status === "APPROVED" ? "Đã duyệt" : "Bị từ chối"}
-              </span>
-            </div>
-            <div className="note">
-              {c.authorizers && c.authorizers.length > 0 ? `Người duyệt: ${approverNames(c.authorizers).join(", ")}` : ""}
-              {pendingIds.has(c.id) ? "" : ""}
-            </div>
-          </div>
-        );
-      })}
-    </>
+    <ApprovalsView
+      requests={requests}
+      adminChanges={adminChanges}
+      history={history}
+      busyId={busy}
+      notice={notice}
+      error={err}
+      onApprove={approve}
+      onDeny={deny}
+    />
   );
 }

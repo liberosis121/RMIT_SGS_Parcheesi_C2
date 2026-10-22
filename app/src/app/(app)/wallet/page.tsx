@@ -1,35 +1,48 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMe, txApi, bankTransfer, bankLedger } from "@/lib/useMe";
-import { seed, vnd, recipientName } from "@/lib/config";
-import { fileGrantRequest, fileRevokeRequest, getCr } from "@/lib/iga";
+import { seed, recipientName } from "@/lib/config";
+import { fileGrantRequest, fileRevokeRequest, getCr, approvalCount } from "@/lib/iga";
 import { approverNames } from "@/lib/names";
+import { money } from "@/lib/format";
+import { bankMessage } from "@/lib/messages";
+import { WalletView } from "@/components/views/WalletView";
+import type { Notice, TransferV, RecipientV } from "@/components/views/types";
 import type { Tx } from "@/lib/types";
 
 const LAG_SECONDS = 120;
+const THRESHOLD = seed.threshold_vnd;
 
 const randHex = (n = 8) =>
   Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
+
+const RECIPIENTS: RecipientV[] = seed.recipients.map((r) => ({ id: r.id, name: r.name, account: r.account }));
 
 export default function WalletPage() {
   const { tc, persona, sub, ctx, authenticated, loading } = useMe();
   const [ledger, setLedger] = useState<any>(null);
   const [txs, setTxs] = useState<Tx[]>([]);
-  const [rid, setRid] = useState(seed.recipients[0].id);
-  const [amount, setAmount] = useState<number>(seed.recipients[0].suggested);
-  const [note, setNote] = useState("");
+  const [progress, setProgress] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [forge, setForge] = useState<{ status: number; code?: string; text: string } | null>(null);
   const [now, setNow] = useState(Date.now());
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const api = txApi(ctx);
+
+  const flash = (n: Notice) => {
+    setNotice(n);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setNotice(null), 7000);
+  };
 
   const refresh = useCallback(async () => {
     try {
       setLedger(await bankLedger());
     } catch {
-      setMsg({ ok: false, text: "Không kết nối được MockBank (cổng 4000). Hãy chạy bank trước." });
+      flash({ ok: false, text: "Cannot reach the bank service. Start MockBank first (port 4000)." });
     }
     try {
       setTxs(await api.list());
@@ -41,7 +54,7 @@ export default function WalletPage() {
     if (authenticated) void refresh();
   }, [authenticated, refresh]);
 
-  // Poll TideCloak for the state of the change requests of pending transactions.
+  // Poll TideCloak for the state of the change requests behind pending transfers.
   useEffect(() => {
     if (!authenticated) return;
     const t = setInterval(async () => {
@@ -51,6 +64,8 @@ export default function WalletPage() {
       for (const tx of pending) {
         try {
           const crs = await Promise.all(tx.crIds.map((id) => getCr(ctx, id)));
+          const n = approvalCount(crs[0]);
+          if (n !== null) setProgress((p) => ({ ...p, [tx.txId]: n }));
           if (crs.some((c) => c.status === "DENIED" || c.status === "CANCELLED")) {
             await api.patch(tx.txId, { status: "DENIED" });
             changed = true;
@@ -70,209 +85,144 @@ export default function WalletPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, txs, ctx]);
 
-  if (loading) return <p>Đang tải…</p>;
-  if (!authenticated) return <p>Hãy đăng nhập trước.</p>;
-  if (persona?.role !== "parent") return <p className="err">Trang này dành cho chủ tài khoản (Bà Lan). Người duyệt hãy vào mục &quot;Duyệt giao dịch&quot;.</p>;
+  if (loading) return <main className="container page"><p className="muted">Loading…</p></main>;
+  if (!authenticated) return <main className="container page"><p>Please sign in first.</p></main>;
+  if (persona?.role !== "parent")
+    return (
+      <main className="container page">
+        <div className="card">This page is for the account owner. Family approvers can use the Approvals page.</div>
+      </main>
+    );
 
-  const rec = seed.recipients.find((r) => r.id === rid)!;
-  const isBig = amount >= seed.threshold_vnd;
+  const transfers: TransferV[] = txs.map((t) => ({
+    txId: t.txId,
+    toId: t.to,
+    toName: recipientName(t.to),
+    toAccount: t.toAccount,
+    amount: t.amount,
+    note: t.note,
+    requestedAt: t.requestedAt,
+    requestedBy: t.requestedBy,
+    status: t.status === "EXECUTED" ? "completed" : t.status === "APPROVED" ? "approved" : t.status === "DENIED" ? "denied" : t.status === "FAILED" ? "blocked" : "waiting",
+    approvals: t.status === "APPROVED" || t.status === "EXECUTED" ? 2 : (progress[t.txId] ?? 0),
+    threshold: 2,
+    approvers: t.approvers ?? [],
+    approvedAt: t.approvedAt,
+    canLock: t.status === "EXECUTED" && t.amount >= THRESHOLD && t.crIds.length > 0,
+    lockRequested: !!t.revokeCrId,
+  }));
 
-  async function submit() {
+  async function submit(v: { recipientId: string; amount: number; note: string }) {
+    const rec = seed.recipients.find((r) => r.id === v.recipientId)!;
     setBusy(true);
-    setMsg(null);
+    setNotice(null);
     try {
       const tx: Tx = {
         txId: crypto.randomUUID(),
         from: seed.owner.account,
         to: rec.id,
         toAccount: rec.account,
-        amount,
+        amount: v.amount,
         nonce: randHex(),
-        note,
+        note: v.note,
         status: "PENDING",
         crIds: [],
         requestedBy: persona!.display,
         requestedAt: new Date().toISOString(),
       };
-      if (!isBig) {
-        // Small transfer: straight from Bà Lan's browser to the bank with her own token.
+      if (v.amount < THRESHOLD) {
+        // Small transfer: straight from the owner's browser to the bank with her own token.
         const r = await bankTransfer(ctx, tx);
         if (r.status === 200) {
           await api.add({ ...tx, status: "EXECUTED", executedAt: new Date().toISOString() });
-          setMsg({ ok: true, text: `Đã chuyển ${vnd(amount)} cho ${rec.name}.` });
+          flash({ ok: true, text: `Sent ${money(v.amount)} to ${rec.name}.` });
         } else {
-          setMsg({ ok: false, text: `Ngân hàng từ chối (${r.status}): ${r.body?.error ?? r.body?.code ?? ""}` });
+          flash({ ok: false, text: bankMessage(r.body?.code, r.body?.error) });
         }
       } else {
         await api.add(tx);
         const ids = await fileGrantRequest(ctx, sub!);
         await api.patch(tx.txId, { crIds: ids });
-        setMsg({ ok: true, text: `Khoản ${vnd(amount)} đang chờ người thân duyệt. Hãy nhờ Thảo hoặc Minh vào mục "Duyệt giao dịch".` });
+        flash({ ok: true, text: `Request sent. ${money(v.amount)} is waiting for Thao or Minh to approve.` });
       }
       await refresh();
     } catch (e: any) {
-      setMsg({ ok: false, text: e?.message ?? String(e) });
+      flash({ ok: false, text: e?.message ?? String(e) });
     } finally {
       setBusy(false);
     }
   }
 
-  async function execute(tx: Tx) {
+  async function complete(t: TransferV) {
+    const tx = txs.find((x) => x.txId === t.txId)!;
     setBusy(true);
-    setMsg(null);
+    setNotice(null);
     try {
       // The role reaches the token only after a refresh (can lag up to ~120 s after the approval).
       await tc.forceRefreshToken?.();
       const r = await bankTransfer(ctx, tx);
       if (r.status === 200) {
         await api.patch(tx.txId, { status: "EXECUTED", executedAt: new Date().toISOString() });
-        setMsg({ ok: true, text: `Đã chuyển ${vnd(tx.amount)} cho ${recipientName(tx.to)}.` });
+        flash({ ok: true, text: `Sent ${money(tx.amount)} to ${recipientName(tx.to)}.` });
       } else if (r.status === 403) {
-        setMsg({
-          ok: false,
-          text: "Quyền duyệt chưa vào token của bạn (có thể trễ tới 2 phút). Đợi một chút rồi bấm lại, hoặc đăng xuất rồi đăng nhập lại.",
-        });
+        flash({ ok: false, text: bankMessage(r.body?.code) + " The permission can take up to 2 minutes to reach your session. Wait a moment and try again, or sign out and back in." });
       } else {
-        setMsg({ ok: false, text: `Ngân hàng từ chối (${r.status}): ${r.body?.error ?? r.body?.code ?? ""}` });
+        flash({ ok: false, text: bankMessage(r.body?.code, r.body?.error) });
       }
       await refresh();
     } catch (e: any) {
-      setMsg({ ok: false, text: e?.message ?? String(e) });
+      flash({ ok: false, text: e?.message ?? String(e) });
     } finally {
       setBusy(false);
     }
   }
 
-  async function devForge(tx: Tx) {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await api.patch(tx.txId, { status: "APPROVED", approvedAt: new Date().toISOString() }); // untrusted DB edited by "dev"
-      const r = await bankTransfer(ctx, tx);
-      setMsg({
-        ok: r.status === 200,
-        text: `Đã sửa DB của app thành "đã duyệt". Ngân hàng trả lời ${r.status} ${r.body?.code ?? ""}: ${r.body?.error ?? ""}`,
-      });
-      await refresh();
-    } catch (e: any) {
-      setMsg({ ok: false, text: e?.message ?? String(e) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function revoke(tx: Tx) {
+  async function lock(t: TransferV) {
     setBusy(true);
     try {
       const ids = await fileRevokeRequest(ctx, sub!);
-      await api.patch(tx.txId, { revokeCrId: ids[0] ?? "pending" });
-      setMsg({ ok: true, text: "Đã gửi yêu cầu khoá lại quyền chuyển khoản lớn. Cần người thân duyệt." });
+      await api.patch(t.txId, { revokeCrId: ids[0] ?? "pending" });
+      flash({ ok: true, text: "Lock requested. Your family needs to approve it." });
       await refresh();
     } catch (e: any) {
-      setMsg({ ok: false, text: e?.message ?? String(e) });
+      flash({ ok: false, text: e?.message ?? String(e) });
     } finally {
       setBusy(false);
     }
   }
 
-  const badge = (t: Tx) =>
-    t.status === "EXECUTED" ? (
-      <span className="badge ok">Đã chuyển</span>
-    ) : t.status === "APPROVED" ? (
-      <span className="badge ok">Đã được duyệt – chờ thực hiện</span>
-    ) : t.status === "DENIED" ? (
-      <span className="badge bad">Bị từ chối</span>
-    ) : (
-      <span className="badge wait">Chờ người thân duyệt</span>
-    );
+  async function forgeApproval(t: TransferV) {
+    const tx = txs.find((x) => x.txId === t.txId)!;
+    setBusy(true);
+    try {
+      await api.patch(tx.txId, { status: "APPROVED", approvedAt: new Date().toISOString() }); // untrusted DB edited by "dev"
+      const r = await bankTransfer(ctx, tx);
+      setForge({ status: r.status, code: r.body?.code, text: bankMessage(r.body?.code, r.body?.error) });
+      await refresh();
+    } catch (e: any) {
+      flash({ ok: false, text: e?.message ?? String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <>
-      <h1>Ví của {persona.display}</h1>
-      <div className="card">
-        <div className="muted">Số dư tài khoản {seed.owner.account}</div>
-        <div className="balance">{ledger ? vnd(ledger.balance) : "…"}</div>
-      </div>
-
-      <div className="card">
-        <h2 style={{ marginTop: 0 }}>Chuyển tiền</h2>
-        <label>Người nhận</label>
-        <select
-          value={rid}
-          onChange={(e) => {
-            setRid(e.target.value);
-            setAmount(seed.recipients.find((r) => r.id === e.target.value)!.suggested);
-          }}
-        >
-          {seed.recipients.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name} – {r.account}
-            </option>
-          ))}
-        </select>
-        <label>Số tiền (đồng)</label>
-        <input type="number" min={1000} step={1000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-        <div className="note">{vnd(amount)}</div>
-        <label>Ghi chú</label>
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ví dụ: học phí" />
-        {isBig ? (
-          <p className="warnbox">
-            Khoản này từ {vnd(seed.threshold_vnd)} trở lên: cần Thảo hoặc Minh duyệt cùng bà. Giao dịch sẽ được giữ lại cho đến khi đủ người duyệt.
-          </p>
-        ) : (
-          <p className="note">Dưới {vnd(seed.threshold_vnd)}: chuyển ngay, không cần ai duyệt.</p>
-        )}
-        <button disabled={busy || !(amount > 0)} onClick={submit}>
-          {busy ? "Đang xử lý…" : isBig ? "Gửi xin duyệt" : "Chuyển ngay"}
-        </button>
-        {msg && <p className={msg.ok ? "okmsg" : "err"}>{msg.text}</p>}
-      </div>
-
-      <h2>Lịch sử giao dịch</h2>
-      {txs.length === 0 && <p className="muted">Chưa có giao dịch nào trong phiên này.</p>}
-      {txs.map((t) => {
-        const left = t.approvedAt ? Math.max(0, LAG_SECONDS - Math.floor((now - Date.parse(t.approvedAt)) / 1000)) : 0;
-        return (
-          <div className="card" key={t.txId}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>
-                {vnd(t.amount)} → {recipientName(t.to)}
-              </strong>
-              {badge(t)}
-            </div>
-            <div className="note">
-              {new Date(t.requestedAt).toLocaleString("vi-VN")} {t.note ? `· ${t.note}` : ""}
-            </div>
-            {t.approvers && t.approvers.length > 0 && <div className="note">Đã duyệt bởi: {t.approvers.join(", ")}</div>}
-            {t.status === "APPROVED" && (
-              <>
-                <p className="note">
-                  Quyền chuyển khoản lớn có thể mất tới {LAG_SECONDS} giây để vào token.
-                  {left > 0 ? ` Gợi ý đợi thêm khoảng ${left} giây.` : " Bạn có thể thử ngay."}
-                </p>
-                <button disabled={busy} onClick={() => execute(t)}>
-                  Thực hiện chuyển tiền (làm mới token)
-                </button>
-              </>
-            )}
-            {t.status === "PENDING" && (
-              <div className="warnbox" style={{ marginTop: ".5rem" }}>
-                <strong>Demo cảnh 4 – &quot;dev có root server&quot;:</strong> sửa thẳng cơ sở dữ liệu của app thành &quot;đã duyệt&quot; rồi gửi
-                lên ngân hàng.{" "}
-                <button className="danger" disabled={busy} onClick={() => devForge(t)}>
-                  Giả mạo trạng thái &quot;đã duyệt&quot; và thử chuyển
-                </button>
-              </div>
-            )}
-            {t.status === "EXECUTED" && t.amount >= seed.threshold_vnd && !t.revokeCrId && t.crIds.length > 0 && (
-              <button className="secondary" disabled={busy} onClick={() => revoke(t)}>
-                Khoá lại quyền (cần người thân duyệt)
-              </button>
-            )}
-            {t.revokeCrId && <div className="note">Đã gửi yêu cầu khoá lại quyền.</div>}
-          </div>
-        );
-      })}
-    </>
+    <WalletView
+      ownerName={persona.display.replace(/ \(.*\)$/, "")}
+      balance={ledger ? ledger.balance : null}
+      account={seed.owner.account}
+      threshold={THRESHOLD}
+      approverNames={seed.approvers.map((a) => a.display).join(" or ")}
+      recipients={RECIPIENTS}
+      transfers={transfers}
+      busy={busy}
+      notice={notice}
+      forgeResult={forge}
+      secondsLeft={(t) => (t.approvedAt ? Math.max(0, LAG_SECONDS - Math.floor((now - Date.parse(t.approvedAt)) / 1000)) : 0)}
+      onSubmit={submit}
+      onComplete={complete}
+      onLock={lock}
+      onForge={forgeApproval}
+    />
   );
 }
