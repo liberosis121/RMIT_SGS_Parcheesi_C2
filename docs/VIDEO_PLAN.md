@@ -1,5 +1,34 @@
 # Kế hoạch quay video demo (2 phút) – KinKey
 
+## ⭐ BẢN CHỐT (17:00): phần demo web chỉ còn ~70 giây
+
+Hằng đã dựng xong **intro 48 giây** (tình huống + ý tưởng). Phần demo web nối tiếp từ **0:48 → 2:00**, tối đa **72 giây**.
+Quay trên chế độ **Simulated TideCloak** (`http://localhost:3000/sim`), riêng cảnh D1 dùng **đăng nhập Tide thật** của Mom nếu đã quay được.
+Quay **từng cảnh riêng** (`Win + Alt + R`), cắt sát khi dựng. Mỗi cảnh **chỉ làm đúng 1 việc**.
+
+**Chuẩn bị:** 2 cửa sổ cạnh nhau. **Trái = Mom** (Chrome), **phải = Thao** (Edge InPrivate). Cả hai mở `http://localhost:3000/sim`.
+Mom đăng nhập `mom` / `demo`, Thao đăng nhập `thao` / `demo` trước khi quay. Zoom Chrome 110%, ẩn bookmark.
+
+| Cảnh | Thời gian | Cửa sổ | Bấm gì | Lời thoại (EN) |
+|---|---|---|---|---|
+| **D1** Đăng nhập | 0:48–0:56 (8s) | Mom | Trang thật `localhost:3000` → **Sign in with Tide** → vào app, chip **Mom (Lan) · Account owner**. (Chưa quay được cảnh thật thì dùng `/sim/signin`) | *"Each family member signs in with their own Tide identity. No one shares a password."* |
+| **D2** Chuyển nhỏ | 0:56–1:04 (8s) | Mom · **Wallet** | **Ben Thanh Market** → **₫2,000,000** → **Send now** → *Sent* | *"Groceries under ten million go straight through."* |
+| **D3** Bị giữ lại | 1:04–1:14 (10s) | Mom · **Wallet** → **Approvals** | **Captain Hung** → **₫200,000,000** → **Request approval** → thẻ vàng *Waiting for family approval* → Approvals → **Approve** (ký) → **1 of 2** | *"A scammer pushes two hundred million. It's held: Mom's key is only one of two."* |
+| **D4** Thảo từ chối | 1:14–1:24 (10s) | Thao · **Approvals** | Thẻ **₫200,000,000 to Captain Hung**, banner đỏ → **Deny** → *Denied* | *"Thao sees a first-time recipient, calls Mom, and denies it."* |
+| **D5** Dev gian lận | 1:24–1:36 (12s) | Mom · **Wallet** (cuộn xuống *Developer attack demo*) | **Forge token** → khung đỏ **401 · INVALID_SIGNATURE**. Mở khung **Your token (decoded)** 2 giây cho thấy role | *"Even our own developer can't fake approval. The bank only trusts Tide's signature."* |
+| **D6** Học phí qua | 1:36–1:52 (16s) | Mom → Thao → Mom | Mom: **Bin – tuition** → **₫30,000,000** → **Request approval** → Approve. Thao: **Approve** → hộp ký Tide → **Confirm** → **2 of 2**. Mom: **Complete transfer** → *Sent* | *"For real tuition, Thao approves, and only then does the money move."* |
+| **D7** Kết | 1:52–2:00 (8s) | Trang chủ `/sim` | Dừng ở tiêu đề + logo | *"KinKey. Two keys for every big transfer."* |
+
+**Tổng lời thoại ~75 chữ**, đọc chậm vẫn vừa 72 giây. Dùng Text-to-speech của Clipchamp cho đều giọng.
+**Chèn chữ nhỏ góc dưới** ở D3–D6: *"Simulated TideCloak (Tide network overloaded during the event)"*, cho trung thực.
+**Cắt bớt nếu dư giờ:** bỏ D1 trước, rồi rút D6 còn cảnh Thao Approve + Mom Complete transfer.
+
+> Đường dẫn và tên nút trong `/sim` theo bản agent đang làm. Mình sẽ xác nhận lại sau khi kiểm tra, khoảng 17:20.
+
+---
+
+## (Bản cũ, tham khảo)
+
 > Ai: **Yến thao tác trên laptop**, **Hằng đạo diễn + lời thoại + dựng**. Quay lúc **16:00–16:30**, dựng xong **17:00**.
 > Nộp: file **`demo.mp4`**, **≤ 2 phút**, **< 100 MB**, đặt ở **thư mục gốc repo**.
 > Có 2 kịch bản: **A** (tạo được tài khoản Tide, chạy thật) và **B** (không tạo được tài khoản, dùng trang preview + tấn công thật). **Lời thoại giống nhau 90%**, chỉ khác cảnh 3.
