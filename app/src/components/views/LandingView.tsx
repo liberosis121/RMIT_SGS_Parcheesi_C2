@@ -111,10 +111,10 @@ export function LandingView(props: {
 
         <section className="band">
           <div className="fact">
-            <div className="big">₫18,900 bn</div>
+            <div className="big">US$744M</div>
             <div>
               <p>
-                lost by people in Vietnam to online scams in 2024. Most scams don&apos;t break a password. They talk the real
+                (about ₫18.9 trillion) lost by people in Vietnam to online scams in 2024. Most scams don&apos;t break a password. They talk the real
                 owner into pressing &ldquo;send&rdquo;.
               </p>
               <p className="src">Source: National Cybersecurity Association (NCA), 2024 survey</p>
