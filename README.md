@@ -1,6 +1,6 @@
-# RMIT_SGS_Parcheesi_C2: Khiên Nhà – Family Shield
+# RMIT_SGS_Parcheesi_C2: KinKey
 
-> **Khiên Nhà is a two-key family wallet: an elderly parent's large transfers only go through when a child they chose also approves, and no server, database or admin can fake that approval.**
+> **KinKey is a two-key family wallet: an elderly parent's large transfers only go through when a child they chose also approves, and no server, database or admin can fake that approval.**
 
 Submission of **Team Parcheesi** (RMIT Saigon South) for **Challenge 2: Tide UNLOCKED** at RMIT Hackathon 2026.
 
@@ -9,7 +9,7 @@ Submission of **Team Parcheesi** (RMIT Saigon South) for **Challenge 2: Tide UNL
 ## Project overview
 
 ### 1. Vision & originality
-Phone scams don't break passwords; they persuade the real owner. Social engineering is prompt injection aimed at humans. Khiên Nhà lets elderly parents keep everyday control, while transfers of 10 million VND or more wait for a second key held by a child they chose.
+Phone scams don't break passwords; they persuade the real owner. Social engineering is prompt injection aimed at humans. KinKey lets elderly parents keep everyday control, while transfers of 10 million VND or more wait for a second key held by a child they chose.
 
 ### 2. Trust constraint insight
 Biometrics prove it is really Mom pressing "send"; in a scam, that is exactly the problem. Today's only fix is handing power to someone: a child who could drain the account, or a vendor whose "co-sign" rule is a database row any admin can edit.
@@ -34,7 +34,7 @@ Mom sends 2 million VND alone. A fake police officer pushes her to send 200 mill
 _[Full commands are added once the prototype is tested end to end.]_ Architecture, ports and run steps: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Stack:
 
 - **TideCloak** dev server: Docker image `tideorg/tidecloak-dev`, port `8080`, realm `khien-nha` with quorum-enforced authorization (IGA) enabled
-- **Khiên Nhà app**: Next.js, port `3000`
+- **KinKey app**: Next.js, port `3000`
 - **MockBank**: Express, port `4000`. Verifies TideCloak-issued JWTs against the realm's public key
 
 ## Limitations (honest scope of this prototype)
