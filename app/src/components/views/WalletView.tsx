@@ -50,6 +50,7 @@ export function WalletView(props: {
   onLock: (t: TransferV) => void;
   onForge: (t: TransferV) => void;
   onForgeToken?: () => void;
+  lagText?: string;
 }) {
   const [rid, setRid] = useState(props.recipients[0]?.id ?? "");
   const [amount, setAmount] = useState<number>(30000000);
@@ -103,8 +104,8 @@ export function WalletView(props: {
                     <div className="hint hint-ok">
                       <IconCheck width={18} height={18} />
                       <span>
-                        Approved by {t.approvers.join(" and ") || "your family"}. The permission can take up to 2 minutes to reach your
-                        session{left > 0 ? ` (about ${left}s left)` : ""}.
+                        Approved by {t.approvers.join(" and ") || "your family"}.{" "}
+                        {props.lagText ?? `The permission can take up to 2 minutes to reach your session${left > 0 ? ` (about ${left}s left)` : ""}.`}
                       </span>
                     </div>
                     <div style={{ marginTop: 16 }}>

@@ -134,6 +134,7 @@ export default function SimWallet() {
       if (r.status === 200) {
         await call("/api/sim/tx", { method: "PATCH", body: JSON.stringify({ txId: tx.txId, patch: { status: "EXECUTED", executedAt: new Date().toISOString() } }) });
         flash({ ok: true, text: `Sent ${money(tx.amount)} to ${nameOf(tx.to)}. The one-time permission was used up.` });
+        await refresh(); // new token: the used-up role is gone
       } else flash({ ok: false, text: bankMessage(r.body?.code, r.body?.error) });
       await load();
     } catch (e: any) {
@@ -188,6 +189,7 @@ export default function SimWallet() {
         onLock={() => {}}
         onForge={forgeDb}
         onForgeToken={forgeToken}
+        lagText="Complete the transfer to refresh your token with the new one-time permission."
       />
       <div className="container">
         <TokenPanel claims={claims} />
