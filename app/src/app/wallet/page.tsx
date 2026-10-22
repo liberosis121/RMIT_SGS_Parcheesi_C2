@@ -143,6 +143,24 @@ export default function WalletPage() {
     }
   }
 
+  async function devForge(tx: Tx) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.patch(tx.txId, { status: "APPROVED", approvedAt: new Date().toISOString() }); // untrusted DB edited by "dev"
+      const r = await bankTransfer(ctx, tx);
+      setMsg({
+        ok: r.status === 200,
+        text: `Đã sửa DB của app thành "đã duyệt". Ngân hàng trả lời ${r.status} ${r.body?.code ?? ""}: ${r.body?.error ?? ""}`,
+      });
+      await refresh();
+    } catch (e: any) {
+      setMsg({ ok: false, text: e?.message ?? String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function revoke(tx: Tx) {
     setBusy(true);
     try {
@@ -236,6 +254,15 @@ export default function WalletPage() {
                   Thực hiện chuyển tiền (làm mới token)
                 </button>
               </>
+            )}
+            {t.status === "PENDING" && (
+              <div className="warnbox" style={{ marginTop: ".5rem" }}>
+                <strong>Demo cảnh 4 – &quot;dev có root server&quot;:</strong> sửa thẳng cơ sở dữ liệu của app thành &quot;đã duyệt&quot; rồi gửi
+                lên ngân hàng.{" "}
+                <button className="danger" disabled={busy} onClick={() => devForge(t)}>
+                  Giả mạo trạng thái &quot;đã duyệt&quot; và thử chuyển
+                </button>
+              </div>
             )}
             {t.status === "EXECUTED" && t.amount >= seed.threshold_vnd && !t.revokeCrId && t.crIds.length > 0 && (
               <button className="secondary" disabled={busy} onClick={() => revoke(t)}>
