@@ -1,0 +1,14 @@
+{
+  "owner": {"username": "ba-lan", "display": "Bà Lan", "account": "0071000123456", "balance": 850000000},
+  "approvers": [{"username": "thao", "display": "Thảo"}, {"username": "minh", "display": "Minh"}],
+  "threshold_vnd": 10000000,
+  "recipients": [
+    {"id": "bin",  "name": "Cháu Bin (học phí)",          "account": "9704000111222", "suggested": 30000000},
+    {"id": "cho",  "name": "Chợ Bến Thành (tiền chợ)",     "account": "9704000333444", "suggested": 2000000},
+    {"id": "hung", "name": "TK tạm giữ – Đại úy Hùng",     "account": "9704999888777", "suggested": 200000000, "scam": true}
+  ],
+  "history": [
+    {"id": "seed-1", "to": "cho", "amount": 1500000, "note": "Tiền chợ tuần trước", "at": "2026-10-15T08:30:00Z"},
+    {"id": "seed-2", "to": "cho", "amount": 900000,  "note": "Tiền điện", "at": "2026-10-18T09:10:00Z"}
+  ]
+}

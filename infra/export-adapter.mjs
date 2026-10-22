@@ -15,3 +15,18 @@ for (const d of ['app/data', 'bank/data']) {
   fs.writeFileSync(path.join(ROOT, d, 'tidecloak.json'), JSON.stringify(adapter, null, 2));
   console.log('wrote', d + '/tidecloak.json (gitignored)');
 }
+
+// Personas by Keycloak user id (usernames may turn into vuids after Tide linking, ids never change).
+const DISPLAY = { 'ba-lan': ['Bà Lan', 'parent'], thao: ['Thảo', 'child'], minh: ['Minh', 'child'] };
+const usersFile = path.join(ROOT, 'data/users.json');
+if (fs.existsSync(usersFile)) {
+  const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+  const personas = {};
+  for (const [username, u] of Object.entries(users)) {
+    personas[u.id] = { username, display: DISPLAY[username][0], role: DISPLAY[username][1] };
+  }
+  for (const d of ['app/data', 'bank/data']) {
+    fs.writeFileSync(path.join(ROOT, d, 'personas.json'), JSON.stringify(personas, null, 2));
+  }
+  console.log('wrote personas.json (id -> persona) to app/data and bank/data');
+}

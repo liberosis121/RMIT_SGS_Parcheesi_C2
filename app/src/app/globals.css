@@ -1,0 +1,24 @@
+:root { --bg:#f4f6f8; --card:#fff; --fg:#14202b; --muted:#5b6b79; --accent:#0b6e4f; --warn:#b45309; --bad:#b42318; --line:#d9e0e6; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size:18px; line-height:1.5; background:var(--bg); color:var(--fg); }
+header.top { background:#0b3d2e; color:#fff; padding:.75rem 1rem; display:flex; flex-wrap:wrap; gap:.75rem 1.25rem; align-items:center; }
+header.top a { color:#cfeede; text-decoration:none; font-weight:600; }
+header.top .who { margin-left:auto; display:flex; gap:.75rem; align-items:center; font-size:.95rem; }
+main { max-width:860px; margin:0 auto; padding:1rem; }
+h1 { font-size:1.6rem; margin:.5rem 0 1rem; } h2 { font-size:1.3rem; margin:1.5rem 0 .5rem; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem; margin:.75rem 0; }
+.balance { font-size:2rem; font-weight:700; color:var(--accent); }
+label { display:block; font-weight:600; margin:.75rem 0 .25rem; }
+input, select, textarea { width:100%; font-size:1.1rem; padding:.7rem; border:1px solid var(--line); border-radius:8px; background:#fff; color:inherit; }
+button { font-size:1.05rem; padding:.7rem 1.1rem; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; font-weight:600; }
+button.secondary { background:#fff; color:var(--accent); }
+button.danger { background:var(--bad); border-color:var(--bad); }
+button:disabled { opacity:.5; cursor:not-allowed; }
+.row { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+.badge { display:inline-block; padding:.1rem .6rem; border-radius:999px; font-size:.85rem; font-weight:700; background:#e5e7eb; }
+.badge.wait { background:#fef3c7; color:var(--warn); } .badge.ok { background:#d1fae5; color:#065f46; } .badge.bad { background:#fee2e2; color:var(--bad); }
+.note { font-size:.9rem; color:var(--muted); } .warnbox { background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; padding:.6rem .8rem; font-size:.95rem; }
+.err { color:var(--bad); font-weight:600; } .okmsg { color:#065f46; font-weight:600; }
+.muted { color:var(--muted); } .big { font-size:1.25rem; font-weight:700; }
+table { width:100%; border-collapse:collapse; } td, th { text-align:left; padding:.4rem .3rem; border-bottom:1px solid var(--line); font-size:.95rem; }
+@media (max-width:520px){ body{font-size:17px} .balance{font-size:1.7rem} }
