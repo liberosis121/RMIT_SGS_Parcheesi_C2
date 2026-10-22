@@ -63,10 +63,10 @@ challenge2/
 ## 2. Phases
 
 ### Phase 1 – TideCloak up (target 13:15)
-- [ ] Read playbook `start-tidecloak-dev`. Write `infra/start-tidecloak.sh` that sources `.env` and runs the
+- [x] Read playbook `start-tidecloak-dev`. Write `infra/start-tidecloak.sh` that sources `.env` and runs the
       container **without `sudo`** (Windows) and **without appending `start-dev`**. Volume: `./data:/opt/keycloak/data/h2`
       (on Git Bash use `MSYS_NO_PATHCONV=1` / `$(pwd -W)` if the mount path breaks).
-- [ ] Wait until `curl -sf http://localhost:8080` succeeds.
+- [x] Wait until `curl -sf http://localhost:8080` succeeds.
 
 ### Phase 2 – Realm bootstrap (target 13:35)
 - [ ] Read `bootstrap-realm-from-template` + canon `tidecloak-bootstrap`. Write `infra/bootstrap-realm.sh`:
@@ -191,4 +191,5 @@ Scenes 1, 2, 3, 6 work end-to-end on `http://localhost:3000` with 3 Tide users i
 rejects a ≥ 10M transfer without the approval role.
 
 ## 7. Builder's log (append findings here)
-- …
+- 12:25 Docker Desktop was stopped; started it from D:\Docker\DockerDesktop. No `jq` on this machine, so infra scripts after Phase 1 are Node (.mjs) instead of bash+jq. Pack templates fetched to `.tide-pack/` (gitignored) via https://mcp.tide.org/pack/templates.tgz; realm template at `.tide-pack/templates/shared/realm.json.template`.
+- Phase 1 done: `infra/start-tidecloak.sh` runs the container without sudo, using `MSYS_NO_PATHCONV=1` and a `pwd -W` host path for the volume; TideCloak answered 302 on :8080 within ~30 s.

@@ -11,3 +11,4 @@ data/
 **/data/tidecloak.json
 tidecloak.json
 .next/
+.tide-pack/
