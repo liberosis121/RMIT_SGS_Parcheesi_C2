@@ -25,6 +25,7 @@ export function ApprovalsView(props: {
   busyId: string | null;
   notice: Notice | null;
   error?: string | null;
+  intro?: string;
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
 }) {
@@ -32,7 +33,7 @@ export function ApprovalsView(props: {
     <main className="container page">
       <div className="page-head">
         <h1>Approvals</h1>
-        <p className="muted">Review requests from your family. Your approval is signed by you through Tide, not by this app.</p>
+        <p className="muted">{props.intro ?? "Review requests from your family. Your approval is signed by you through Tide, not by this app."}</p>
       </div>
       {props.error && (
         <div className="hint hint-bad" style={{ marginBottom: 16 }}>

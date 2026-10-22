@@ -14,6 +14,7 @@ export function NavBar(props: {
   onSignIn?: () => void;
   onSignOut?: () => void;
   loading?: boolean;
+  extra?: React.ReactNode;
 }) {
   const { user, active, base = "", showWallet = true } = props;
   return (
@@ -30,6 +31,7 @@ export function NavBar(props: {
           </div>
         )}
         <div className="nav-right">
+          {props.extra}
           {props.loading ? (
             <span className="muted small">Loading…</span>
           ) : user ? (

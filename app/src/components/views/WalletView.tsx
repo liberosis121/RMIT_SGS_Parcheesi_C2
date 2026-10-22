@@ -49,6 +49,7 @@ export function WalletView(props: {
   onComplete: (t: TransferV) => void;
   onLock: (t: TransferV) => void;
   onForge: (t: TransferV) => void;
+  onForgeToken?: () => void;
 }) {
   const [rid, setRid] = useState(props.recipients[0]?.id ?? "");
   const [amount, setAmount] = useState<number>(30000000);
@@ -253,7 +254,12 @@ export function WalletView(props: {
           <button className="btn btn-danger" disabled={props.busy || !forgeTarget} onClick={() => forgeTarget && props.onForge(forgeTarget)}>
             Forge approval and try to send
           </button>
-          {!forgeTarget && <span className="small muted" style={{ marginLeft: 12 }}>Needs a transfer that is waiting for approval.</span>}
+          {props.onForgeToken && (
+            <button className="btn btn-danger" style={{ marginLeft: 8 }} disabled={props.busy} onClick={props.onForgeToken}>
+              Forge a token
+            </button>
+          )}
+          {!forgeTarget && <span className="small muted" style={{ marginLeft: 12 }}>The first button needs a transfer that is waiting for approval.</span>}
         </div>
         {props.forgeResult && (
           <div className="result" role="status">
