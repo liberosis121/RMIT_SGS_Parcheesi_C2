@@ -328,10 +328,7 @@ node scripts/attack-forge.mjs
 
 ## 13. Team and sources
 
-**Team Parcheesi**, RMIT Saigon South:
-- Trần Kim Yến
-- Nguyễn Thị Trúc Hằng
-- Trà Văn Sỹ
+**Team Parcheesi**, RMIT Saigon South
 
 **Sources**
 - Tide UNLOCKED challenge: https://tide.org/unlocked/
